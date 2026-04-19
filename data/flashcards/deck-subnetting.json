@@ -1,0 +1,79 @@
+{
+  "id": "deck-subnetting",
+  "title": "Subnetting Quick Reference",
+  "category": "IP Addressing",
+  "cards": [
+    {
+      "id": "sn001",
+      "front": "What is the subnet mask for /24?",
+      "back": "255.255.255.0\n\n256 total addresses · 254 usable hosts\nNetwork block size: 256",
+      "tags": ["/24", "subnet mask", "CIDR"]
+    },
+    {
+      "id": "sn002",
+      "front": "What is the subnet mask for /25?",
+      "back": "255.255.255.128\n\n128 total addresses · 126 usable hosts\nNetwork block size: 128",
+      "tags": ["/25", "subnet mask", "CIDR"]
+    },
+    {
+      "id": "sn003",
+      "front": "What is the subnet mask for /26?",
+      "back": "255.255.255.192\n\n64 total addresses · 62 usable hosts\nNetwork block size: 64",
+      "tags": ["/26", "subnet mask", "CIDR"]
+    },
+    {
+      "id": "sn004",
+      "front": "What is the subnet mask for /27?",
+      "back": "255.255.255.224\n\n32 total addresses · 30 usable hosts\nNetwork block size: 32",
+      "tags": ["/27", "subnet mask", "CIDR"]
+    },
+    {
+      "id": "sn005",
+      "front": "What is the subnet mask for /28?",
+      "back": "255.255.255.240\n\n16 total addresses · 14 usable hosts\nNetwork block size: 16",
+      "tags": ["/28", "subnet mask", "CIDR"]
+    },
+    {
+      "id": "sn006",
+      "front": "What is the subnet mask for /30?",
+      "back": "255.255.255.252\n\n4 total addresses · 2 usable hosts\n\nTypically used for point-to-point WAN links.",
+      "tags": ["/30", "subnet mask", "WAN", "point-to-point"]
+    },
+    {
+      "id": "sn007",
+      "front": "How do you calculate usable hosts per subnet?",
+      "back": "Formula: 2^h - 2\n\nWhere h = number of host bits (bits NOT in the mask)\n\nExample: /26 → host bits = 32-26 = 6\n2^6 - 2 = 62 usable hosts",
+      "tags": ["hosts", "formula", "subnetting"]
+    },
+    {
+      "id": "sn008",
+      "front": "How do you find the broadcast address of a subnet?",
+      "back": "Broadcast = Network Address + Block Size - 1\n\nExample: 192.168.1.64/26\nBlock size = 64\nBroadcast = 64 + 64 - 1 = 192.168.1.127",
+      "tags": ["broadcast", "subnetting", "formula"]
+    },
+    {
+      "id": "sn009",
+      "front": "What is a wildcard mask?",
+      "back": "Wildcard mask = inverse of subnet mask\n\nSubnet: 255.255.255.0\nWildcard: 0.0.0.255\n\nUsed in ACLs and OSPF. A '0' bit = must match, '1' bit = don't care.",
+      "tags": ["wildcard", "ACL", "OSPF", "mask"]
+    },
+    {
+      "id": "sn010",
+      "front": "What are the private IPv4 address ranges (RFC 1918)?",
+      "back": "Class A: 10.0.0.0/8 (10.0.0.0 – 10.255.255.255)\nClass B: 172.16.0.0/12 (172.16.0.0 – 172.31.255.255)\nClass C: 192.168.0.0/16 (192.168.0.0 – 192.168.255.255)\n\nNot routable on the public internet.",
+      "tags": ["private", "RFC 1918", "IPv4", "NAT"]
+    },
+    {
+      "id": "sn011",
+      "front": "How many subnets can you create with n borrowed bits?",
+      "back": "Formula: 2^n subnets\n\nExamples:\n1 bit → 2 subnets\n2 bits → 4 subnets\n3 bits → 8 subnets\n4 bits → 16 subnets\n\nAlways a power of 2.",
+      "tags": ["subnets", "formula", "borrowing bits"]
+    },
+    {
+      "id": "sn012",
+      "front": "What is the network address for host 192.168.5.100/27?",
+      "back": "Network: 192.168.5.96\n\n/27 block size = 32\nSubnet boundaries: .0, .32, .64, .96, .128...\n.100 falls in the .96 block → Network = 192.168.5.96\nBroadcast = 192.168.5.127",
+      "tags": ["network address", "subnetting", "/27"]
+    }
+  ]
+}

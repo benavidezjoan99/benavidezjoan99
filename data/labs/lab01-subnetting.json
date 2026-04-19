@@ -1,0 +1,51 @@
+{
+  "id": "lab01-subnetting",
+  "title": "Subnetting a /24 Network",
+  "type": "guided",
+  "difficulty": "beginner",
+  "domain": "1.0 Networking Concepts",
+  "objective": "Divide 192.168.10.0/24 into 4 equal subnets and identify each subnet's network address, broadcast address, and usable host range.",
+  "background": "You are a network administrator at a small company. You have been assigned the 192.168.10.0/24 address space and need to divide it into 4 equal subnets for 4 departments: Sales, HR, Engineering, and Management. Each subnet needs to support at least 50 hosts.",
+  "steps": [
+    {
+      "stepNumber": 1,
+      "instruction": "How many bits must you borrow from the host portion to create exactly 4 subnets? (enter a number)",
+      "type": "input",
+      "acceptedAnswers": ["2", "two"],
+      "hint": "Use the formula 2^n >= required subnets. For 4 subnets: 2^n >= 4, so 2^2 = 4. You need n = 2.",
+      "explanation": "To create 4 subnets you borrow 2 bits from the host portion (2^2 = 4 subnets). Each subnet will have 6 host bits remaining, giving 2^6 = 64 addresses (62 usable hosts)."
+    },
+    {
+      "stepNumber": 2,
+      "instruction": "What is the new subnet mask in CIDR prefix notation? (e.g. /26)",
+      "type": "input",
+      "acceptedAnswers": ["/26", "26"],
+      "hint": "Start with the original /24 and add the number of bits you borrowed: 24 + 2 = ?",
+      "explanation": "/24 + 2 borrowed bits = /26. The subnet mask in dotted-decimal is 255.255.255.192."
+    },
+    {
+      "stepNumber": 3,
+      "instruction": "What is the network address of the FIRST subnet? (e.g. 192.168.10.0)",
+      "type": "input",
+      "acceptedAnswers": ["192.168.10.0", "192.168.10.0/26"],
+      "hint": "The first subnet always starts at the beginning of the original network address.",
+      "explanation": "First subnet: 192.168.10.0/26 — Network: 192.168.10.0, Broadcast: 192.168.10.63, Usable hosts: .1 to .62 (62 hosts)."
+    },
+    {
+      "stepNumber": 4,
+      "instruction": "What is the network address of the SECOND subnet? (e.g. 192.168.10.64)",
+      "type": "input",
+      "acceptedAnswers": ["192.168.10.64", "192.168.10.64/26"],
+      "hint": "Each /26 block contains 64 addresses. Add 64 to the previous network address: 0 + 64 = ?",
+      "explanation": "Second subnet: 192.168.10.64/26 — Network: 192.168.10.64, Broadcast: 192.168.10.127, Usable hosts: .65 to .126."
+    },
+    {
+      "stepNumber": 5,
+      "instruction": "What is the BROADCAST address of the FOURTH (last) subnet? (e.g. 192.168.10.255)",
+      "type": "input",
+      "acceptedAnswers": ["192.168.10.255"],
+      "hint": "The 4th subnet starts at 192.168.10.192. A /26 block spans 64 addresses. 192 + 63 = ?",
+      "explanation": "Fourth subnet: 192.168.10.192/26 — Network: 192.168.10.192, Broadcast: 192.168.10.255, Usable hosts: .193 to .254. The broadcast is always the last address in the block (network address + 63 for a /26)."
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "labs": [
+    {
+      "id": "lab01-subnetting",
+      "title": "Subnetting a /24 Network",
+      "type": "guided",
+      "difficulty": "beginner",
+      "domain": "1.0 Networking Concepts",
+      "estimatedMinutes": 20,
+      "description": "Divide 192.168.10.0/24 into 4 equal subnets. Practice CIDR notation, network addresses, and broadcast addresses."
+    }
+  ]
+}

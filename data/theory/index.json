@@ -1,0 +1,22 @@
+{
+  "chapters": [
+    {
+      "id": "ch01-osi-model",
+      "title": "The OSI Model",
+      "domain": "1.0 Networking Concepts",
+      "domainId": "domain1",
+      "phase": 1,
+      "estimatedMinutes": 25,
+      "tags": ["OSI", "layers", "encapsulation", "PDU"]
+    },
+    {
+      "id": "ch02-tcp-ip",
+      "title": "TCP/IP Model & IP Addressing",
+      "domain": "1.0 Networking Concepts",
+      "domainId": "domain1",
+      "phase": 1,
+      "estimatedMinutes": 30,
+      "tags": ["TCP/IP", "IPv4", "IPv6", "subnetting", "ARP", "DHCP"]
+    }
+  ]
+}

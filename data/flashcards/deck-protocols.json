@@ -1,0 +1,115 @@
+{
+  "id": "deck-protocols",
+  "title": "Common Network Protocols & Ports",
+  "category": "Protocols",
+  "cards": [
+    {
+      "id": "fp001",
+      "front": "What port does HTTP use?",
+      "back": "Port 80 (TCP)\n\nHyperText Transfer Protocol — unencrypted web traffic.",
+      "tags": ["HTTP", "port", "TCP"]
+    },
+    {
+      "id": "fp002",
+      "front": "What port does HTTPS use?",
+      "back": "Port 443 (TCP)\n\nHTTP Secure — encrypted with TLS/SSL.",
+      "tags": ["HTTPS", "TLS", "port"]
+    },
+    {
+      "id": "fp003",
+      "front": "What port does DNS use?",
+      "back": "Port 53 (UDP for queries, TCP for zone transfers)\n\nDomain Name System — resolves hostnames to IP addresses.",
+      "tags": ["DNS", "port", "UDP", "TCP"]
+    },
+    {
+      "id": "fp004",
+      "front": "What ports does DHCP use?",
+      "back": "Port 67 (server) and Port 68 (client) — UDP\n\nDynamic Host Configuration Protocol — assigns IP addresses automatically.",
+      "tags": ["DHCP", "port", "UDP"]
+    },
+    {
+      "id": "fp005",
+      "front": "What port does SSH use?",
+      "back": "Port 22 (TCP)\n\nSecure Shell — encrypted remote terminal access and file transfer.",
+      "tags": ["SSH", "port", "TCP", "security"]
+    },
+    {
+      "id": "fp006",
+      "front": "What ports does FTP use?",
+      "back": "Port 20 (data transfer) and Port 21 (control) — TCP\n\nFile Transfer Protocol — unencrypted file transfer.",
+      "tags": ["FTP", "port", "TCP"]
+    },
+    {
+      "id": "fp007",
+      "front": "What port does Telnet use?",
+      "back": "Port 23 (TCP)\n\nTelnet — unencrypted remote terminal access. Replaced by SSH for security.",
+      "tags": ["Telnet", "port", "TCP", "insecure"]
+    },
+    {
+      "id": "fp008",
+      "front": "What port does SMTP use?",
+      "back": "Port 25 (TCP) — server-to-server email transfer\nPort 587 (TCP) — client submission (modern)\n\nSimple Mail Transfer Protocol — sends email.",
+      "tags": ["SMTP", "email", "port", "TCP"]
+    },
+    {
+      "id": "fp009",
+      "front": "What port does POP3 use?",
+      "back": "Port 110 (TCP) — unencrypted\nPort 995 (TCP) — POP3 over TLS\n\nPost Office Protocol v3 — downloads email from server (removes from server).",
+      "tags": ["POP3", "email", "port", "TCP"]
+    },
+    {
+      "id": "fp010",
+      "front": "What port does IMAP use?",
+      "back": "Port 143 (TCP) — unencrypted\nPort 993 (TCP) — IMAP over TLS\n\nInternet Message Access Protocol — syncs email (leaves on server).",
+      "tags": ["IMAP", "email", "port", "TCP"]
+    },
+    {
+      "id": "fp011",
+      "front": "What ports does SNMP use?",
+      "back": "Port 161 (UDP) — SNMP queries\nPort 162 (UDP) — SNMP traps (alerts)\n\nSimple Network Management Protocol — monitors and manages network devices.",
+      "tags": ["SNMP", "monitoring", "port", "UDP"]
+    },
+    {
+      "id": "fp012",
+      "front": "What port does RDP use?",
+      "back": "Port 3389 (TCP)\n\nRemote Desktop Protocol — Windows GUI remote access. Should be secured with VPN or NLA.",
+      "tags": ["RDP", "remote", "port", "TCP", "Windows"]
+    },
+    {
+      "id": "fp013",
+      "front": "What port does NTP use?",
+      "back": "Port 123 (UDP)\n\nNetwork Time Protocol — synchronizes clocks across network devices. Critical for certificate validation and logging.",
+      "tags": ["NTP", "time", "port", "UDP"]
+    },
+    {
+      "id": "fp014",
+      "front": "What port does LDAP use?",
+      "back": "Port 389 (TCP/UDP) — unencrypted\nPort 636 (TCP) — LDAPS (LDAP over TLS)\n\nLightweight Directory Access Protocol — used to query Active Directory and other directory services.",
+      "tags": ["LDAP", "directory", "Active Directory", "port"]
+    },
+    {
+      "id": "fp015",
+      "front": "What port does SMB use?",
+      "back": "Port 445 (TCP)\n\nServer Message Block — Windows file sharing, printer sharing. Also used by ransomware (EternalBlue/WannaCry targeted this port).",
+      "tags": ["SMB", "file sharing", "port", "TCP", "Windows"]
+    },
+    {
+      "id": "fp016",
+      "front": "What port does BGP use?",
+      "back": "Port 179 (TCP)\n\nBorder Gateway Protocol — the routing protocol of the internet. Used between autonomous systems (ISPs, large organizations).",
+      "tags": ["BGP", "routing", "port", "TCP"]
+    },
+    {
+      "id": "fp017",
+      "front": "What port does SFTP use?",
+      "back": "Port 22 (TCP) — same as SSH\n\nSSH File Transfer Protocol — secure file transfer over SSH. Not the same as FTPS.",
+      "tags": ["SFTP", "SSH", "port", "TCP", "secure"]
+    },
+    {
+      "id": "fp018",
+      "front": "What port does SIP use?",
+      "back": "Port 5060 (TCP/UDP) — unencrypted\nPort 5061 (TCP) — SIP over TLS\n\nSession Initiation Protocol — sets up VoIP calls. Used with RTP for actual audio.",
+      "tags": ["SIP", "VoIP", "port", "UDP"]
+    }
+  ]
+}
