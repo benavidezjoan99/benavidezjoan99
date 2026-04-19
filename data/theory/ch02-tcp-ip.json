@@ -1,0 +1,146 @@
+{
+  "id": "ch02-tcp-ip",
+  "title": "TCP/IP Model & IP Addressing",
+  "domain": "1.0 Networking Concepts",
+  "version": "N10-009",
+  "tabs": {
+    "simple": {
+      "headline": "TCP/IP is the real-world language of the internet",
+      "paragraphs": [
+        "While OSI is a theoretical model with 7 layers, TCP/IP is what computers actually use — it has just 4 layers and powers everything from email to video calls.",
+        "IP addressing is like a home address — it tells routers where to deliver data. Every device on a network needs a unique IP address.",
+        "IPv4 uses 4 numbers (like 192.168.1.10) separated by dots. IPv6 uses 8 groups of hex numbers for a much larger address space."
+      ]
+    },
+    "technical": {
+      "headline": "RFC 1122 — The Internet Architecture",
+      "paragraphs": [
+        "The TCP/IP model consolidates the OSI 7-layer model into 4 functional layers. It was developed by DARPA and is the foundation of the modern internet.",
+        "IPv4 addresses are 32-bit values written in dotted-decimal notation (four octets). Subnetting uses a subnet mask to divide an address into network and host portions.",
+        "CIDR (Classless Inter-Domain Routing) replaces classful addressing and uses prefix notation (e.g., /24) to indicate how many bits are the network portion."
+      ],
+      "layers": [
+        {
+          "number": 4,
+          "name": "Application",
+          "pdu": "Data",
+          "protocols": ["HTTP", "HTTPS", "DNS", "SMTP", "FTP", "SSH", "DHCP", "SNMP"],
+          "description": "Combines OSI layers 5, 6, and 7. Handles all application-level protocols and data formatting."
+        },
+        {
+          "number": 3,
+          "name": "Transport",
+          "pdu": "Segment / Datagram",
+          "protocols": ["TCP", "UDP"],
+          "description": "End-to-end communication. TCP = reliable, connection-oriented. UDP = fast, connectionless."
+        },
+        {
+          "number": 2,
+          "name": "Internet",
+          "pdu": "Packet",
+          "protocols": ["IPv4", "IPv6", "ICMP", "ARP", "IGMP"],
+          "description": "Logical addressing and routing. Equivalent to OSI Layer 3. IP headers added here."
+        },
+        {
+          "number": 1,
+          "name": "Network Access",
+          "pdu": "Frame / Bit",
+          "protocols": ["Ethernet", "Wi-Fi (802.11)", "PPP", "DSL"],
+          "description": "Physical transmission and MAC addressing. Combines OSI Layers 1 and 2."
+        }
+      ],
+      "ipv4Classes": [
+        {
+          "class": "A",
+          "range": "1.0.0.0 – 126.255.255.255",
+          "defaultMask": "255.0.0.0",
+          "cidr": "/8",
+          "notes": "Large organizations. 127.x.x.x reserved for loopback."
+        },
+        {
+          "class": "B",
+          "range": "128.0.0.0 – 191.255.255.255",
+          "defaultMask": "255.255.0.0",
+          "cidr": "/16",
+          "notes": "Medium organizations."
+        },
+        {
+          "class": "C",
+          "range": "192.0.0.0 – 223.255.255.255",
+          "defaultMask": "255.255.255.0",
+          "cidr": "/24",
+          "notes": "Small networks. Most common for home/office."
+        },
+        {
+          "class": "D",
+          "range": "224.0.0.0 – 239.255.255.255",
+          "defaultMask": "N/A",
+          "cidr": "N/A",
+          "notes": "Multicast. Not assignable to hosts."
+        }
+      ]
+    },
+    "realWorld": {
+      "headline": "How your PC gets an IP address and sends data",
+      "scenario": "You plug your laptop into a network. Here's exactly what happens with IP addressing:",
+      "steps": [
+        "Your NIC sends a DHCP Discover broadcast (255.255.255.255) to find a DHCP server",
+        "The DHCP server responds with an Offer: IP 192.168.1.50, mask 255.255.255.0, gateway 192.168.1.1",
+        "Your PC sends a DHCP Request to accept the offer",
+        "DHCP server sends ACK — your PC is now configured with IP, mask, gateway, and DNS",
+        "You ping 8.8.8.8: your PC checks if 8.8.8.8 is on your subnet — it's not (/24), so it sends to the default gateway",
+        "Your router (192.168.1.1) routes the packet out to the internet toward 8.8.8.8",
+        "ARP is used at each hop to resolve the next-hop router's MAC address for frame delivery"
+      ]
+    },
+    "commands": {
+      "headline": "Essential IP configuration and troubleshooting commands",
+      "items": [
+        {
+          "os": "Windows",
+          "command": "ipconfig /all",
+          "description": "Shows full IP configuration including DHCP server, DNS, MAC address",
+          "output": "IPv4 Address: 192.168.1.50\nSubnet Mask: 255.255.255.0\nDefault Gateway: 192.168.1.1\nDHCP Server: 192.168.1.1\nDNS Servers: 8.8.8.8"
+        },
+        {
+          "os": "Linux",
+          "command": "ip addr show",
+          "description": "Displays IP addresses and network interfaces",
+          "output": "2: eth0: <BROADCAST,MULTICAST,UP>\n    inet 192.168.1.50/24 brd 192.168.1.255"
+        },
+        {
+          "os": "Windows",
+          "command": "ipconfig /release && ipconfig /renew",
+          "description": "Releases and renews DHCP lease — useful for troubleshooting",
+          "output": "Releasing IP address for Ethernet...\nRenewing IP address for Ethernet...\nIP Address: 192.168.1.51"
+        },
+        {
+          "os": "Windows / Linux",
+          "command": "tracert 8.8.8.8  (traceroute on Linux)",
+          "description": "Shows each hop (router) the packet takes to the destination",
+          "output": "1  192.168.1.1   1 ms   (your router)\n2  10.0.0.1      8 ms   (ISP)\n3  72.14.215.1  12 ms   (Google edge)"
+        }
+      ]
+    },
+    "commonMistakes": {
+      "headline": "Exam traps on TCP/IP and IP addressing",
+      "mistakes": [
+        {
+          "mistake": "Confusing OSI and TCP/IP layer counts",
+          "correction": "OSI has 7 layers; TCP/IP has 4. The TCP/IP Application layer covers OSI layers 5, 6, and 7. The TCP/IP Network Access layer covers OSI layers 1 and 2.",
+          "examTip": "Questions about real-world protocols use TCP/IP (4 layers). Questions about layer concepts often refer to OSI (7 layers). Know both."
+        },
+        {
+          "mistake": "Using a /24 subnet for 300 hosts",
+          "correction": "A /24 provides only 254 usable hosts (256 - 2 for network and broadcast). For 300 hosts you need /23 (510 usable) or /22 (1022 usable).",
+          "examTip": "Formula: usable hosts = 2^(host bits) - 2. Always subtract 2 for network and broadcast addresses."
+        },
+        {
+          "mistake": "Thinking APIPA means the device has internet access",
+          "correction": "APIPA (169.254.x.x) means the device FAILED to get a DHCP address. The device assigned itself an address and can only communicate with other APIPA devices on the same segment.",
+          "examTip": "If a user says they have a 169.254.x.x address and cannot access the internet, check DHCP server availability."
+        }
+      ]
+    }
+  }
+}

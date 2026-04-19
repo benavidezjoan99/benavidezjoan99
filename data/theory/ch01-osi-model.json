@@ -1,0 +1,136 @@
+{
+  "id": "ch01-osi-model",
+  "title": "The OSI Model",
+  "domain": "1.0 Networking Concepts",
+  "version": "N10-009",
+  "tabs": {
+    "simple": {
+      "headline": "Think of it like sending a letter",
+      "paragraphs": [
+        "The OSI model breaks down how computers talk to each other into 7 clear steps — like an assembly line. Each layer has one job, and it passes data down (or up) the line.",
+        "When you send data, it travels DOWN the layers on your computer, then UP the layers on the receiver's side. Each layer wraps the data with extra information (called encapsulation).",
+        "A simple memory trick: 'Please Do Not Throw Sausage Pizza Away' maps to Physical, Data Link, Network, Transport, Session, Presentation, Application (bottom to top)."
+      ]
+    },
+    "technical": {
+      "headline": "The Open Systems Interconnection Reference Model",
+      "paragraphs": [
+        "The OSI model (ISO/IEC 7498-1) defines seven abstract layers that describe how network communications are structured. It is a conceptual framework used to understand interoperability between different systems and vendors.",
+        "Each layer communicates with the layer directly above and below it using service primitives. Peer layers on two communicating devices exchange Protocol Data Units (PDUs) using defined protocols."
+      ],
+      "layers": [
+        {
+          "number": 7,
+          "name": "Application",
+          "pdu": "Data",
+          "protocols": ["HTTP", "FTP", "SMTP", "DNS", "DHCP", "SNMP"],
+          "description": "Provides network services directly to end-user applications. The layer closest to the user."
+        },
+        {
+          "number": 6,
+          "name": "Presentation",
+          "pdu": "Data",
+          "protocols": ["TLS", "SSL", "JPEG", "MPEG", "ASCII"],
+          "description": "Data translation, encryption/decryption, and compression. Ensures data is in a usable format."
+        },
+        {
+          "number": 5,
+          "name": "Session",
+          "pdu": "Data",
+          "protocols": ["NetBIOS", "RPC", "PPTP", "L2TP"],
+          "description": "Manages sessions (connections) between applications. Handles establishment, maintenance, and termination."
+        },
+        {
+          "number": 4,
+          "name": "Transport",
+          "pdu": "Segment / Datagram",
+          "protocols": ["TCP", "UDP"],
+          "description": "End-to-end communication, segmentation, flow control, and error correction (TCP) or speed (UDP)."
+        },
+        {
+          "number": 3,
+          "name": "Network",
+          "pdu": "Packet",
+          "protocols": ["IP", "ICMP", "OSPF", "BGP", "RIP"],
+          "description": "Logical addressing (IP), routing across networks, and path determination."
+        },
+        {
+          "number": 2,
+          "name": "Data Link",
+          "pdu": "Frame",
+          "protocols": ["Ethernet", "802.11 Wi-Fi", "PPP", "ARP"],
+          "description": "Physical (MAC) addressing, framing, and error detection (CRC). Divided into LLC and MAC sublayers."
+        },
+        {
+          "number": 1,
+          "name": "Physical",
+          "pdu": "Bit",
+          "protocols": ["RS-232", "1000BASE-T", "DSL", "USB", "Bluetooth PHY"],
+          "description": "Bit transmission over physical media — cables, fiber, radio waves. Defines voltage, timing, and connectors."
+        }
+      ]
+    },
+    "realWorld": {
+      "headline": "An HTTPS request — walking through all 7 layers",
+      "scenario": "You type https://google.com in your browser and press Enter. Here's what happens at each OSI layer:",
+      "steps": [
+        "Layer 7 (Application): Your browser creates an HTTP GET request for google.com",
+        "Layer 6 (Presentation): TLS encrypts the HTTP request into a secured payload",
+        "Layer 5 (Session): TCP connection negotiation sets up the session between browser and server",
+        "Layer 4 (Transport): TCP segments the data and assigns destination port 443",
+        "Layer 3 (Network): IP adds source IP (your computer) and destination IP (Google's server)",
+        "Layer 2 (Data Link): Ethernet frames the packet with your MAC address and your router's MAC",
+        "Layer 1 (Physical): Your NIC converts the bits into electrical signals (or light/radio) and transmits them"
+      ]
+    },
+    "commands": {
+      "headline": "Commands that expose each OSI layer",
+      "items": [
+        {
+          "os": "Windows / Linux",
+          "command": "ping 8.8.8.8",
+          "description": "Tests Layer 3 (Network) connectivity using ICMP",
+          "output": "Reply from 8.8.8.8: bytes=32 time=12ms TTL=117"
+        },
+        {
+          "os": "Windows",
+          "command": "netstat -ano",
+          "description": "Shows Layer 4 (Transport) active TCP/UDP connections",
+          "output": "TCP  0.0.0.0:80  0.0.0.0:0  LISTENING  4"
+        },
+        {
+          "os": "Linux",
+          "command": "tcpdump -i eth0 -n",
+          "description": "Captures Layer 2/3 frames and packets",
+          "output": "14:23:01 IP 192.168.1.10 > 8.8.8.8: ICMP echo request, id 1, seq 1"
+        },
+        {
+          "os": "Windows",
+          "command": "arp -a",
+          "description": "Shows Layer 2 (Data Link) ARP table — IP-to-MAC mappings",
+          "output": "Internet Address  Physical Address   Type\n192.168.1.1      aa-bb-cc-dd-ee-ff  dynamic"
+        }
+      ]
+    },
+    "commonMistakes": {
+      "headline": "Top exam traps about the OSI model",
+      "mistakes": [
+        {
+          "mistake": "Confusing Layer 2 and Layer 3 addressing",
+          "correction": "Layer 2 uses MAC addresses (physical, used within the same LAN segment). Layer 3 uses IP addresses (logical, routable across different networks). Switches use MAC (Layer 2); routers use IP (Layer 3).",
+          "examTip": "If a question involves sending data across different networks or the internet, think Layer 3 IP. If it's between devices on the same switch, think Layer 2 MAC."
+        },
+        {
+          "mistake": "Thinking routers only work at Layer 3",
+          "correction": "Routers primarily make forwarding decisions at Layer 3, but modern routers also process Layers 4-7 for features like firewall rules (Layer 4), NAT, QoS, and deep packet inspection.",
+          "examTip": "On the exam, routers = Layer 3 device unless stated otherwise."
+        },
+        {
+          "mistake": "Mixing up TCP and UDP layers",
+          "correction": "Both TCP and UDP operate at Layer 4 (Transport). TCP is connection-oriented with error correction. UDP is connectionless and faster but unreliable.",
+          "examTip": "If a question asks about reliability, retransmission, or three-way handshake — that's TCP (Layer 4). If it asks about speed or streaming — UDP."
+        }
+      ]
+    }
+  }
+}
