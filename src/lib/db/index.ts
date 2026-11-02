@@ -6,10 +6,28 @@ import { SEED_CATALOG } from "../catalog-seed";
 import * as schema from "./schema";
 
 const DATA_DIR = path.join(process.cwd(), "data");
-const DB_PATH = path.join(DATA_DIR, "casacalc.sqlite");
+const DB_PATH = path.join(DATA_DIR, "obracalc.sqlite");
+const LEGACY_DB_PATH = path.join(DATA_DIR, "casacalc.sqlite");
 
 let sqlite: Database.Database | null = null;
 let dbInstance: ReturnType<typeof drizzle<typeof schema>> | null = null;
+
+function migrateLegacyDbIfNeeded() {
+  if (fs.existsSync(DB_PATH)) return;
+  if (!fs.existsSync(LEGACY_DB_PATH)) return;
+  fs.copyFileSync(LEGACY_DB_PATH, DB_PATH);
+  for (const suffix of ["-wal", "-shm"]) {
+    const legacy = LEGACY_DB_PATH + suffix;
+    if (fs.existsSync(legacy)) {
+      fs.copyFileSync(legacy, DB_PATH + suffix);
+    }
+  }
+}
+
+function columnExists(database: Database.Database, table: string, column: string): boolean {
+  const cols = database.prepare(`PRAGMA table_info(${table})`).all() as Array<{ name: string }>;
+  return cols.some((c) => c.name === column);
+}
 
 function ensureSchema(database: Database.Database) {
   database.exec(`
@@ -22,7 +40,9 @@ function ensureSchema(database: Database.Database) {
       unit TEXT NOT NULL,
       unit_price_usd REAL NOT NULL,
       notes TEXT,
-      is_estimate INTEGER NOT NULL DEFAULT 1
+      is_estimate INTEGER NOT NULL DEFAULT 1,
+      price_source TEXT NOT NULL DEFAULT 'seed',
+      priced_at TEXT
     );
 
     CREATE TABLE IF NOT EXISTS projects (
@@ -59,9 +79,27 @@ function ensureSchema(database: Database.Database) {
       unit TEXT NOT NULL,
       quantity REAL NOT NULL DEFAULT 0,
       unit_price REAL NOT NULL DEFAULT 0,
-      sort_order INTEGER NOT NULL DEFAULT 0
+      sort_order INTEGER NOT NULL DEFAULT 0,
+      price_source TEXT,
+      priced_at TEXT
     );
   `);
+
+  // Additive migrations for DBs created by CasaCalc MVP
+  if (!columnExists(database, "catalog_items", "price_source")) {
+    database.exec(
+      `ALTER TABLE catalog_items ADD COLUMN price_source TEXT NOT NULL DEFAULT 'seed'`,
+    );
+  }
+  if (!columnExists(database, "catalog_items", "priced_at")) {
+    database.exec(`ALTER TABLE catalog_items ADD COLUMN priced_at TEXT`);
+  }
+  if (!columnExists(database, "line_items", "price_source")) {
+    database.exec(`ALTER TABLE line_items ADD COLUMN price_source TEXT`);
+  }
+  if (!columnExists(database, "line_items", "priced_at")) {
+    database.exec(`ALTER TABLE line_items ADD COLUMN priced_at TEXT`);
+  }
 }
 
 function seedCatalogIfEmpty(database: Database.Database) {
@@ -70,14 +108,15 @@ function seedCatalogIfEmpty(database: Database.Database) {
   };
   if (row.c > 0) return;
 
+  const seedDate = "2026-11-02";
   const insert = database.prepare(`
-    INSERT INTO catalog_items (id, name, category, unit, unit_price_usd, notes, is_estimate)
-    VALUES (@id, @name, @category, @unit, @unitPriceUsd, @notes, 1)
+    INSERT INTO catalog_items (id, name, category, unit, unit_price_usd, notes, is_estimate, price_source, priced_at)
+    VALUES (@id, @name, @category, @unit, @unitPriceUsd, @notes, 1, 'seed', @pricedAt)
   `);
 
   const tx = database.transaction((items: typeof SEED_CATALOG) => {
     for (const item of items) {
-      insert.run(item);
+      insert.run({ ...item, pricedAt: seedDate });
     }
   });
   tx(SEED_CATALOG);
@@ -87,6 +126,7 @@ export function getDb() {
   if (dbInstance) return dbInstance;
 
   fs.mkdirSync(DATA_DIR, { recursive: true });
+  migrateLegacyDbIfNeeded();
   sqlite = new Database(DB_PATH);
   sqlite.pragma("journal_mode = WAL");
   sqlite.pragma("foreign_keys = ON");
@@ -101,6 +141,17 @@ export function getSqlite() {
   getDb();
   if (!sqlite) throw new Error("SQLite no inicializado");
   return sqlite;
+}
+
+export function getDbPath() {
+  return DB_PATH;
+}
+
+/** True when Supabase env is present (Fase 1b). Fase 1a always uses SQLite. */
+export function isSupabaseConfigured(): boolean {
+  return Boolean(
+    process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+  );
 }
 
 export { schema };

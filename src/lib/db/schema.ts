@@ -8,6 +8,10 @@ export const catalogItems = sqliteTable("catalog_items", {
   unitPriceUsd: real("unit_price_usd").notNull(),
   notes: text("notes"),
   isEstimate: integer("is_estimate", { mode: "boolean" }).notNull().default(true),
+  /** seed | manual | csv | provider:* */
+  priceSource: text("price_source").notNull().default("seed"),
+  /** ISO date when price was set / imported */
+  pricedAt: text("priced_at"),
 });
 
 export const projects = sqliteTable("projects", {
@@ -52,6 +56,8 @@ export const lineItems = sqliteTable("line_items", {
   quantity: real("quantity").notNull().default(0),
   unitPrice: real("unit_price").notNull().default(0),
   sortOrder: integer("sort_order").notNull().default(0),
+  priceSource: text("price_source"),
+  pricedAt: text("priced_at"),
 });
 
 export type CatalogItem = typeof catalogItems.$inferSelect;

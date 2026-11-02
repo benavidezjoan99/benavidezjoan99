@@ -5,7 +5,7 @@
 import fs from "fs";
 import path from "path";
 
-const dbPath = path.join(process.cwd(), "data", "casacalc.sqlite");
+const dbPath = path.join(process.cwd(), "data", "obracalc.sqlite");
 if (fs.existsSync(dbPath)) {
   fs.unlinkSync(dbPath);
   for (const suffix of ["-wal", "-shm"]) {
@@ -15,9 +15,9 @@ if (fs.existsSync(dbPath)) {
   console.log("Base anterior eliminada.");
 }
 
-import { getDb } from "../src/lib/db";
+import { getDb, getDbPath } from "../src/lib/db";
 import { getCatalog } from "../src/lib/projects";
 
 getDb();
 const items = getCatalog();
-console.log(`Catálogo semilla listo: ${items.length} materiales en data/casacalc.sqlite`);
+console.log(`Catálogo semilla listo: ${items.length} materiales en ${getDbPath()}`);
