@@ -2,6 +2,7 @@ export {
   QuantityTakeoffEngine,
   computeTakeoff,
   computeTakeoffFromSuggestions,
+  buildRoomQuantityLines,
 } from "./quantity-takeoff-engine";
 export type { SpaceTakeoffInput, TakeoffOptions } from "./quantity-takeoff-engine";
 

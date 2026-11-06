@@ -1,6 +1,6 @@
 import { asc, eq } from "drizzle-orm";
 import { computeProjectTotals } from "@/domain/engines/estimation-engine";
-import { computeTakeoffFromSuggestions } from "@/domain/engines/quantity-takeoff-engine";
+import { buildRoomQuantityLines } from "@/domain/engines/quantity-takeoff-engine";
 import { resolvePrice } from "@/domain/engines/pricing-engine";
 import {
   catalogToCsv,
@@ -180,12 +180,18 @@ export function addRoom(projectId: string, input: AddRoomInput): Room | null {
   if (input.suggestMaterials !== false) {
     const catalog = getCatalog();
     const byId = new Map(catalog.map((c) => [c.id, c]));
+    const catalogUnits = Object.fromEntries(
+      catalog.map((c) => [c.id, { unit: c.unit }]),
+    );
     const suggestions = suggestionsForRoom(input.roomType);
-    // QuantityTakeoffEngine path (MVP suggestion quantities)
-    const qtyLines = computeTakeoffFromSuggestions(suggestions, {
+    // Dimensional QuantityTakeoffEngine when areaM2 is set; else MVP templates.
+    const qtyLines = buildRoomQuantityLines({
+      spaceType: input.roomType,
       spaceId: roomId,
       count,
-      sourcePrefix: "mvp-suggest",
+      areaM2: input.areaM2 ?? null,
+      suggestions,
+      catalogUnits,
     });
     const existingLines = db
       .select()

@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { computeTakeoff, computeTakeoffFromSuggestions } from "../quantity-takeoff-engine";
+import {
+  buildRoomQuantityLines,
+  computeTakeoff,
+  computeTakeoffFromSuggestions,
+} from "../quantity-takeoff-engine";
 
 describe("QuantityTakeoffEngine", () => {
   it("is deterministic (bit-identical) across two runs", () => {
@@ -117,5 +121,56 @@ describe("QuantityTakeoffEngine", () => {
     );
     expect(lines[0].quantity).toBe(200);
     expect(lines[1].quantity).toBe(4);
+  });
+
+  it("buildRoomQuantityLines: without area uses MVP templates only", () => {
+    const suggestions = [
+      { catalogId: "bloque-8", quantityPerUnit: 100 },
+      { catalogId: "tomacorriente", quantityPerUnit: 4 },
+    ];
+    const lines = buildRoomQuantityLines({
+      spaceType: "dormitorio",
+      spaceId: "r1",
+      count: 1,
+      areaM2: null,
+      suggestions,
+    });
+    expect(lines.every((l) => l.sourceRuleId.startsWith("mvp-suggest:"))).toBe(true);
+    expect(lines.map((l) => l.catalogItemId).sort()).toEqual([
+      "bloque-8",
+      "tomacorriente",
+    ]);
+  });
+
+  it("buildRoomQuantityLines: with areaM2 uses dimensional takeoff + uncovered suggestions", () => {
+    const suggestions = [
+      { catalogId: "bloque-8", quantityPerUnit: 100 },
+      { catalogId: "ceramica-piso", quantityPerUnit: 150 },
+      { catalogId: "pintura-interior", quantityPerUnit: 2 },
+      { catalogId: "drywall-1-2", quantityPerUnit: 10 },
+      { catalogId: "tomacorriente", quantityPerUnit: 4 },
+      { catalogId: "puerta-interior", quantityPerUnit: 1 },
+    ];
+    const lines = buildRoomQuantityLines({
+      spaceType: "dormitorio",
+      spaceId: "r1",
+      count: 1,
+      areaM2: 12, // ≈ 129.17 ft² → square side ≈ 11.37 ft
+      suggestions,
+    });
+
+    const byId = Object.fromEntries(lines.map((l) => [l.catalogItemId, l]));
+    // Dimensional rules replace fixed bloque/piso/pintura/drywall
+    expect(byId["bloque-8"].sourceRuleId).toBe("rule-blocks-8");
+    expect(byId["ceramica-piso"].sourceRuleId).toBe("rule-flooring-ceramica");
+    expect(byId["pintura-interior"].sourceRuleId).toBe("rule-paint-interior");
+    expect(byId["drywall-1-2"].sourceRuleId).toBe("rule-gypsum-1-2");
+    // Uncovered suggestions kept as templates
+    expect(byId["tomacorriente"].sourceRuleId).toContain("mvp-suggest");
+    expect(byId["tomacorriente"].quantity).toBe(4);
+    expect(byId["puerta-interior"].quantity).toBe(1);
+    // Flooring: 12 m² * 10.76391 * 1.1 ≈ 141.99
+    expect(byId["ceramica-piso"].quantity).toBeGreaterThan(140);
+    expect(byId["ceramica-piso"].quantity).not.toBe(150);
   });
 });
