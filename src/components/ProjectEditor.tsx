@@ -110,6 +110,7 @@ export function ProjectEditor({ initial, catalog }: Props) {
       setError(data.error || "No se pudo agregar ambiente");
       return;
     }
+    const usedDimensional = Boolean(roomForm.areaM2 && Number(roomForm.areaM2) > 0);
     setRoomForm({
       name: "",
       roomType: "dormitorio",
@@ -117,7 +118,9 @@ export function ProjectEditor({ initial, catalog }: Props) {
       areaM2: "",
       suggestMaterials: true,
     });
-    setMessage("Ambiente agregado con materiales sugeridos");
+    setMessage(
+      usedDimensional ? t("editor.roomAddedDimensional") : t("editor.roomAddedTemplate"),
+    );
     await refresh();
   }
 
@@ -383,9 +386,11 @@ export function ProjectEditor({ initial, catalog }: Props) {
                 <input
                   value={roomForm.areaM2}
                   onChange={(e) => setRoomForm((s) => ({ ...s, areaM2: e.target.value }))}
+                  placeholder="ej. 12"
                   className="w-full rounded-md border border-[var(--line)] bg-white px-3 py-2"
                 />
               </label>
+              <p className="text-xs text-[var(--ink-muted)] sm:col-span-2">{t("editor.areaHint")}</p>
               <label className="flex items-center gap-2 sm:col-span-2">
                 <input
                   type="checkbox"

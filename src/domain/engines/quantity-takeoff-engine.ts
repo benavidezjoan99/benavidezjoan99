@@ -184,7 +184,79 @@ export function computeTakeoffFromSuggestions(
   }));
 }
 
+export type RoomSuggestionQty = { catalogId: string; quantityPerUnit: number };
+
+export type BuildRoomQuantityLinesInput = {
+  spaceType: string;
+  spaceId?: string | null;
+  count?: number;
+  areaM2?: number | null;
+  lengthFt?: number | null;
+  widthFt?: number | null;
+  heightFt?: number | null;
+  /** Plantillas fijas MVP (eléctricos, puertas, etc.). */
+  suggestions: RoomSuggestionQty[];
+  catalogUnits?: CatalogUnitLookup;
+};
+
+/**
+ * Flujo de producto «Agregar ambiente»:
+ * - Con área o largo×ancho → QuantityTakeoffEngine dimensional + sugerencias
+ *   no cubiertas por reglas (p. ej. tomacorrientes, puertas).
+ * - Sin dimensiones → solo plantillas fijas MVP.
+ */
+export function buildRoomQuantityLines(input: BuildRoomQuantityLinesInput): QuantityLine[] {
+  const count = input.count && input.count > 0 ? input.count : 1;
+  const areaM2 = input.areaM2 != null && input.areaM2 > 0 ? input.areaM2 : null;
+  const hasLengthWidth =
+    input.lengthFt != null &&
+    input.widthFt != null &&
+    input.lengthFt > 0 &&
+    input.widthFt > 0;
+  const hasDimensions = areaM2 != null || hasLengthWidth;
+
+  if (!hasDimensions) {
+    return computeTakeoffFromSuggestions(input.suggestions, {
+      spaceId: input.spaceId,
+      count,
+      sourcePrefix: "mvp-suggest",
+    });
+  }
+
+  const dimensional = computeTakeoff(
+    [
+      {
+        id: input.spaceId ?? undefined,
+        spaceType: input.spaceType,
+        count,
+        areaM2,
+        lengthFt: input.lengthFt,
+        widthFt: input.widthFt,
+        heightFt: input.heightFt,
+      },
+    ],
+    { catalogUnits: input.catalogUnits },
+  );
+
+  const covered = new Set(dimensional.map((l) => l.catalogItemId));
+  const extras = input.suggestions.filter((s) => !covered.has(s.catalogId));
+  const suggestionLines = computeTakeoffFromSuggestions(extras, {
+    spaceId: input.spaceId,
+    count,
+    sourcePrefix: "mvp-suggest",
+  });
+
+  const merged = [...dimensional, ...suggestionLines];
+  merged.sort((a, b) => {
+    const sa = `${a.spaceId ?? ""}\0${a.sourceRuleId}\0${a.catalogItemId}`;
+    const sb = `${b.spaceId ?? ""}\0${b.sourceRuleId}\0${b.catalogItemId}`;
+    return sa < sb ? -1 : sa > sb ? 1 : 0;
+  });
+  return merged;
+}
+
 export const QuantityTakeoffEngine = {
   computeTakeoff,
   computeTakeoffFromSuggestions,
+  buildRoomQuantityLines,
 };
