@@ -3,6 +3,7 @@
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { formatUsd } from "@/lib/calculations";
+import { t } from "@/lib/i18n";
 import { PR_MUNICIPALITIES } from "@/lib/municipalities";
 import {
   CATEGORY_LABELS,
@@ -227,14 +228,14 @@ export function ProjectEditor({ initial, catalog }: Props) {
             href={`/api/projects/${project.id}/export`}
             className="rounded-md border border-[var(--line)] bg-white px-4 py-2 text-sm font-medium hover:bg-[var(--surface)]"
           >
-            Exportar CSV
+            {t("editor.exportCsv")}
           </a>
           <button
             type="button"
             onClick={deleteProject}
             className="rounded-md px-4 py-2 text-sm text-[var(--danger)]"
           >
-            Eliminar
+            {t("editor.delete")}
           </button>
         </div>
       </div>
@@ -250,7 +251,7 @@ export function ProjectEditor({ initial, catalog }: Props) {
       <div className="grid gap-8 lg:grid-cols-[1fr_280px]">
         <div className="space-y-10">
           <section className="space-y-4">
-            <h2 className="brand-mark text-2xl text-[var(--bg-deep)]">Datos del proyecto</h2>
+            <h2 className="brand-mark text-2xl text-[var(--bg-deep)]">{t("editor.projectData")}</h2>
             <form onSubmit={saveProject} className="grid gap-3 sm:grid-cols-2">
               <label className="space-y-1 sm:col-span-2">
                 <span className="text-sm font-medium">Nombre</span>
@@ -335,7 +336,7 @@ export function ProjectEditor({ initial, catalog }: Props) {
           </section>
 
           <section className="space-y-4">
-            <h2 className="brand-mark text-2xl text-[var(--bg-deep)]">Ambientes</h2>
+            <h2 className="brand-mark text-2xl text-[var(--bg-deep)]">{t("editor.rooms")}</h2>
             <form
               onSubmit={addRoom}
               className="grid gap-3 rounded-lg border border-dashed border-[var(--line)] bg-white/60 p-4 sm:grid-cols-2"
@@ -393,7 +394,7 @@ export function ProjectEditor({ initial, catalog }: Props) {
                     setRoomForm((s) => ({ ...s, suggestMaterials: e.target.checked }))
                   }
                 />
-                <span className="text-sm">Sugerir materiales del catálogo semilla</span>
+                <span className="text-sm">{t("editor.catalogSuggest")}</span>
               </label>
               <div className="sm:col-span-2">
                 <button
@@ -435,7 +436,7 @@ export function ProjectEditor({ initial, catalog }: Props) {
           </section>
 
           <section className="space-y-4">
-            <h2 className="brand-mark text-2xl text-[var(--bg-deep)]">Materiales</h2>
+            <h2 className="brand-mark text-2xl text-[var(--bg-deep)]">{t("editor.materials")}</h2>
             <form
               onSubmit={addLine}
               className="grid gap-3 rounded-lg border border-dashed border-[var(--line)] bg-white/60 p-4"
@@ -572,6 +573,9 @@ export function ProjectEditor({ initial, catalog }: Props) {
                                   />
                                   <span className="text-xs text-[var(--ink-muted)]">
                                     {line.unit}
+                                    {line.priceSource
+                                      ? ` · ${line.priceSource}${line.pricedAt ? ` @ ${line.pricedAt}` : ""}`
+                                      : ""}
                                   </span>
                                 </td>
                                 <td className="py-2 pr-2 text-[var(--ink-muted)]">

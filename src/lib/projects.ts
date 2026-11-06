@@ -1,6 +1,14 @@
 import { asc, eq } from "drizzle-orm";
+import { computeProjectTotals } from "@/domain/engines/estimation-engine";
+import { computeTakeoffFromSuggestions } from "@/domain/engines/quantity-takeoff-engine";
+import { resolvePrice } from "@/domain/engines/pricing-engine";
+import {
+  catalogToCsv,
+  parseCatalogCsv,
+  type CsvCatalogRow,
+} from "@/providers/pricing/csv-import-provider";
 import { computeTotals } from "./calculations";
-import { getDb, schema } from "./db";
+import { getDb, getSqlite, schema } from "./db";
 import { newId, nowIso, todayDate } from "./id";
 import { suggestionsForRoom } from "./room-templates";
 import type { ProjectMode, RoomType } from "./types";
@@ -22,7 +30,11 @@ export function listProjects(): Project[] {
 
 export function getCatalog(): CatalogItem[] {
   const db = getDb();
-  return db.select().from(catalogItems).orderBy(asc(catalogItems.category), asc(catalogItems.name)).all();
+  return db
+    .select()
+    .from(catalogItems)
+    .orderBy(asc(catalogItems.category), asc(catalogItems.name))
+    .all();
 }
 
 export function getProjectDetail(id: string): ProjectDetail | null {
@@ -44,7 +56,8 @@ export function getProjectDetail(id: string): ProjectDetail | null {
     .orderBy(asc(lineItems.sortOrder))
     .all();
 
-  const totals = computeTotals({
+  // EstimationEngine (vía computeProjectTotals) — misma fórmula, sin doble conteo
+  const totals = computeProjectTotals({
     materialLines: items.map((i) => ({
       quantity: i.quantity,
       unitPrice: i.unitPrice,
@@ -65,7 +78,7 @@ export type CreateProjectInput = {
   laborPercent?: number;
   contingencyPercent?: number;
   notes?: string | null;
-  /** Solo "construir" en MVP; se acepta el campo por extensión. */
+  /** Solo "construir" en Fase 1; se acepta el campo por extensión. */
   mode?: ProjectMode;
 };
 
@@ -73,7 +86,6 @@ export function createProject(input: CreateProjectInput): Project {
   const db = getDb();
   const id = newId();
   const ts = nowIso();
-  // Extensión futura: aceptar "remodelar" cuando exista UI/flujo. MVP solo construye.
   if (input.mode === "remodelar") {
     throw new Error(
       "El modo remodelar aún no está disponible. Usa construir (obra nueva).",
@@ -169,6 +181,12 @@ export function addRoom(projectId: string, input: AddRoomInput): Room | null {
     const catalog = getCatalog();
     const byId = new Map(catalog.map((c) => [c.id, c]));
     const suggestions = suggestionsForRoom(input.roomType);
+    // QuantityTakeoffEngine path (MVP suggestion quantities)
+    const qtyLines = computeTakeoffFromSuggestions(suggestions, {
+      spaceId: roomId,
+      count,
+      sourcePrefix: "mvp-suggest",
+    });
     const existingLines = db
       .select()
       .from(lineItems)
@@ -176,9 +194,28 @@ export function addRoom(projectId: string, input: AddRoomInput): Room | null {
       .all();
 
     let order = existingLines.length;
-    for (const suggestion of suggestions) {
-      const item = byId.get(suggestion.catalogId);
+    const pricedAt = todayDate();
+    for (const q of qtyLines) {
+      const item = byId.get(q.catalogItemId);
       if (!item) continue;
+      const resolved = resolvePrice({
+        catalogItemId: item.id,
+        catalog: catalog.map((c) => ({
+          id: c.id,
+          name: c.name,
+          category: c.category,
+          unit: c.unit,
+          unitPriceUsd: c.unitPriceUsd,
+          isEstimate: c.isEstimate,
+        })),
+        prices: catalog.map((c) => ({
+          catalogItemId: c.id,
+          unitPriceUsd: c.unitPriceUsd,
+          source: (c.priceSource as "seed" | "manual" | "csv") || "seed",
+          pricedAt: c.pricedAt || pricedAt,
+          isEstimate: c.isEstimate,
+        })),
+      });
       db.insert(lineItems)
         .values({
           id: newId(),
@@ -188,9 +225,11 @@ export function addRoom(projectId: string, input: AddRoomInput): Room | null {
           description: item.name,
           category: item.category,
           unit: item.unit,
-          quantity: suggestion.quantityPerUnit * count,
-          unitPrice: item.unitPriceUsd,
+          quantity: q.quantity,
+          unitPrice: resolved?.unitPriceUsd ?? item.unitPriceUsd,
           sortOrder: order++,
+          priceSource: resolved?.source ?? item.priceSource ?? "seed",
+          pricedAt: resolved?.pricedAt ?? item.pricedAt ?? pricedAt,
         })
         .run();
     }
@@ -249,6 +288,8 @@ export type UpsertLineInput = {
   unit: string;
   quantity: number;
   unitPrice: number;
+  priceSource?: string | null;
+  pricedAt?: string | null;
 };
 
 export function upsertLineItem(projectId: string, input: UpsertLineInput): LineItem | null {
@@ -269,6 +310,9 @@ export function upsertLineItem(projectId: string, input: UpsertLineInput): LineI
       unit: input.unit,
       quantity: input.quantity,
       unitPrice: input.unitPrice,
+      priceSource:
+        input.priceSource !== undefined ? input.priceSource : existing.priceSource,
+      pricedAt: input.pricedAt !== undefined ? input.pricedAt : existing.pricedAt,
     };
     db.update(lineItems).set(updated).where(eq(lineItems.id, input.id)).run();
     db.update(projects)
@@ -290,6 +334,8 @@ export function upsertLineItem(projectId: string, input: UpsertLineInput): LineI
     quantity: input.quantity,
     unitPrice: input.unitPrice,
     sortOrder: existing.length,
+    priceSource: input.priceSource ?? (input.catalogItemId ? "seed" : "manual"),
+    pricedAt: input.pricedAt ?? todayDate(),
   };
   db.insert(lineItems).values(row).run();
   db.update(projects)
@@ -311,6 +357,86 @@ export function deleteLineItem(projectId: string, lineId: string): boolean {
   return true;
 }
 
+export function exportCatalogCsv(): string {
+  const items = getCatalog();
+  return catalogToCsv(
+    items.map((i) => ({
+      id: i.id,
+      name: i.name,
+      category: i.category,
+      unit: i.unit,
+      unitPriceUsd: i.unitPriceUsd,
+      notes: i.notes,
+      priceSource: i.priceSource,
+      pricedAt: i.pricedAt,
+      isEstimate: i.isEstimate,
+    })),
+  );
+}
+
+export type CatalogImportResult = {
+  updated: number;
+  inserted: number;
+  rows: CsvCatalogRow[];
+};
+
+/**
+ * Importa CSV de catálogo: actualiza precio/fuente/fecha de ítems existentes;
+ * inserta filas nuevas si traen name+category+unit.
+ */
+export function importCatalogCsv(text: string): CatalogImportResult {
+  const rows = parseCatalogCsv(text);
+  const db = getDb();
+  let updated = 0;
+  let inserted = 0;
+  const pricedAtDefault = todayDate();
+
+  const sqlite = getSqlite();
+  const apply = sqlite.transaction(() => {
+    for (const row of rows) {
+      const existing = db
+        .select()
+        .from(catalogItems)
+        .where(eq(catalogItems.id, row.id))
+        .get();
+      if (existing) {
+        db.update(catalogItems)
+          .set({
+            unitPriceUsd: row.unitPriceUsd,
+            priceSource: "csv",
+            pricedAt: row.pricedAt || pricedAtDefault,
+            isEstimate: row.isEstimate ?? true,
+            notes: row.notes !== undefined ? row.notes : existing.notes,
+            name: row.name?.trim() || existing.name,
+            category: row.category?.trim() || existing.category,
+            unit: row.unit?.trim() || existing.unit,
+          })
+          .where(eq(catalogItems.id, row.id))
+          .run();
+        updated++;
+      } else if (row.name && row.category && row.unit) {
+        db.insert(catalogItems)
+          .values({
+            id: row.id,
+            name: row.name.trim(),
+            category: row.category.trim(),
+            unit: row.unit.trim(),
+            unitPriceUsd: row.unitPriceUsd,
+            notes: row.notes ?? "Importado CSV",
+            isEstimate: row.isEstimate ?? true,
+            priceSource: "csv",
+            pricedAt: row.pricedAt || pricedAtDefault,
+          })
+          .run();
+        inserted++;
+      }
+    }
+  });
+  apply();
+
+  return { updated, inserted, rows };
+}
+
 export function buildCsv(detail: ProjectDetail): string {
   const escape = (v: string | number | null | undefined) => {
     const s = v == null ? "" : String(v);
@@ -319,7 +445,7 @@ export function buildCsv(detail: ProjectDetail): string {
   };
 
   const lines: string[] = [];
-  lines.push("CasaCalc PR — Presupuesto (estimación orientativa)");
+  lines.push("ObraCalc PR — Presupuesto (estimación orientativa)");
   lines.push(`Proyecto,${escape(detail.project.name)}`);
   lines.push(`Modo,${escape(detail.project.mode)}`);
   lines.push(`Municipio,${escape(detail.project.municipality)}`);
@@ -328,7 +454,9 @@ export function buildCsv(detail: ProjectDetail): string {
   lines.push(`Mano de obra %,${escape(detail.project.laborPercent)}`);
   lines.push(`Imprevistos %,${escape(detail.project.contingencyPercent)}`);
   lines.push("");
-  lines.push("Ambiente,Descripción,Categoría,Unidad,Cantidad,Precio unitario USD,Subtotal USD");
+  lines.push(
+    "Ambiente,Descripción,Categoría,Unidad,Cantidad,Precio unitario USD,Subtotal USD,Fuente,Fecha precio",
+  );
 
   const roomName = (id: string | null) =>
     detail.rooms.find((r) => r.id === id)?.name ?? "General";
@@ -344,6 +472,8 @@ export function buildCsv(detail: ProjectDetail): string {
         escape(item.quantity),
         escape(item.unitPrice),
         escape(Math.round(sub * 100) / 100),
+        escape(item.priceSource),
+        escape(item.pricedAt),
       ].join(","),
     );
   }
@@ -357,7 +487,9 @@ export function buildCsv(detail: ProjectDetail): string {
     lines.push(`USD/m²,,,${escape(detail.totals.costPerM2)}`);
   }
   lines.push("");
-  lines.push("Nota,Precios de catálogo semilla son estimaciones en USD (PR/US). No es cotización de contratista.");
+  lines.push(
+    "Nota,Precios de catálogo semilla son estimaciones en USD (PR/US). No es cotización de contratista. Sin scraping ni precios en vivo fingidos.",
+  );
 
   return lines.join("\n");
 }
