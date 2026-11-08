@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { formatUsd } from "@/lib/money";
 import { CATEGORY_LABELS, type CatalogCategory } from "@/lib/types";
 import { t } from "@/lib/i18n";
@@ -27,9 +27,28 @@ function sourceLabel(source: string): string {
   return source;
 }
 
+function readParams(): { category: string; query: string } {
+  if (typeof window === "undefined") return { category: ALL, query: "" };
+  const sp = new URLSearchParams(window.location.search);
+  const cat = sp.get("categoria") || sp.get("category") || ALL;
+  const q = sp.get("q") || sp.get("buscar") || "";
+  return { category: cat || ALL, query: q };
+}
+
 export function CatalogBrowser({ items }: { items: CatalogBrowserItem[] }) {
-  const [category, setCategory] = useState<string>(ALL);
-  const [query, setQuery] = useState("");
+  const initial = readParams();
+  const [category, setCategory] = useState<string>(initial.category);
+  const [query, setQuery] = useState(initial.query);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const sp = new URLSearchParams();
+    if (category !== ALL) sp.set("categoria", category);
+    if (query.trim()) sp.set("q", query.trim());
+    const next = sp.toString();
+    const url = next ? `${window.location.pathname}?${next}` : window.location.pathname;
+    window.history.replaceState(null, "", url);
+  }, [category, query]);
 
   const categories = useMemo(() => {
     const set = new Set(items.map((i) => i.category));
