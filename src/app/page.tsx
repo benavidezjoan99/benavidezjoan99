@@ -27,6 +27,12 @@ export default function HomePage() {
           >
             {t("home.newProject")}
           </Link>
+          <Link
+            href="/catalogo"
+            className="rounded-md border border-[var(--line)] bg-white px-5 py-2.5 text-sm font-medium transition hover:bg-[var(--surface)]"
+          >
+            {t("nav.catalog")}
+          </Link>
         </div>
       </section>
 

@@ -2,7 +2,7 @@ import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import fs from "fs";
 import path from "path";
-import { SEED_CATALOG } from "../catalog-seed";
+import { SEED_CATALOG, SEED_CATALOG_DATE } from "../catalog-seed";
 import * as schema from "./schema";
 
 const DATA_DIR = path.join(process.cwd(), "data");
@@ -102,23 +102,40 @@ function ensureSchema(database: Database.Database) {
   }
 }
 
+/**
+ * Si el catálogo está vacío, inserta toda la semilla DEMO.
+ * Si ya hay filas, inserta solo SKUs semilla faltantes (no pisa CSV/manual).
+ */
 function seedCatalogIfEmpty(database: Database.Database) {
   const row = database.prepare("SELECT COUNT(*) AS c FROM catalog_items").get() as {
     c: number;
   };
-  if (row.c > 0) return;
 
-  const seedDate = "2026-11-02";
   const insert = database.prepare(`
-    INSERT INTO catalog_items (id, name, category, unit, unit_price_usd, notes, is_estimate, price_source, priced_at)
+    INSERT OR IGNORE INTO catalog_items (id, name, category, unit, unit_price_usd, notes, is_estimate, price_source, priced_at)
     VALUES (@id, @name, @category, @unit, @unitPriceUsd, @notes, 1, 'seed', @pricedAt)
   `);
 
   const tx = database.transaction((items: typeof SEED_CATALOG) => {
     for (const item of items) {
-      insert.run({ ...item, pricedAt: seedDate });
+      insert.run({
+        id: item.id,
+        name: item.name,
+        category: item.category,
+        unit: item.unit,
+        unitPriceUsd: item.unitPriceUsd,
+        notes: item.notes,
+        pricedAt: item.pricedAt ?? SEED_CATALOG_DATE,
+      });
     }
   });
+
+  if (row.c === 0) {
+    tx(SEED_CATALOG);
+    return;
+  }
+
+  // Enrich existing DBs with new seed SKUs without overwriting user/CSV prices.
   tx(SEED_CATALOG);
 }
 

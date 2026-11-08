@@ -3,6 +3,7 @@ import type { PriceContext, PriceProvider, ProviderQuote } from "./types";
 /**
  * ManualProvider — precios cargados a mano (mapa sku → precio).
  * No hace red; solo devuelve lo que se le configuró.
+ * Flujo: ManualProvider → CatalogPriceRecord(source=manual) → PricingEngine.resolvePrice
  */
 export class ManualProvider implements PriceProvider {
   readonly id = "manual";

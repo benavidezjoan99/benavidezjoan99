@@ -4,9 +4,13 @@ import { buildRoomQuantityLines } from "@/domain/engines/quantity-takeoff-engine
 import { resolvePrice } from "@/domain/engines/pricing-engine";
 import {
   catalogToCsv,
-  parseCatalogCsv,
   type CsvCatalogRow,
 } from "@/providers/pricing/csv-import-provider";
+import {
+  formatCatalogCsvIssues,
+  validateCatalogCsv,
+  type CatalogCsvValidationResult,
+} from "@/providers/pricing/catalog-csv-validate";
 import { computeTotals } from "./calculations";
 import { getDb, getSqlite, schema } from "./db";
 import { newId, nowIso, todayDate } from "./id";
@@ -383,18 +387,29 @@ export function exportCatalogCsv(): string {
 export type CatalogImportResult = {
   updated: number;
   inserted: number;
+  skipped: number;
   rows: CsvCatalogRow[];
+  validation: CatalogCsvValidationResult;
 };
 
 /**
- * Importa CSV de catálogo: actualiza precio/fuente/fecha de ítems existentes;
+ * Importa CSV de catálogo tras validar columnas/categorías/unidades.
+ * Actualiza precio/fuente/fecha de ítems existentes (source=csv + fecha);
  * inserta filas nuevas si traen name+category+unit.
  */
 export function importCatalogCsv(text: string): CatalogImportResult {
-  const rows = parseCatalogCsv(text);
+  const validation = validateCatalogCsv(text);
+  if (!validation.ok) {
+    throw new Error(
+      `CSV de catálogo inválido:\n${formatCatalogCsvIssues(validation)}`,
+    );
+  }
+
+  const rows = validation.rows;
   const db = getDb();
   let updated = 0;
   let inserted = 0;
+  let skipped = 0;
   const pricedAtDefault = todayDate();
 
   const sqlite = getSqlite();
@@ -405,11 +420,13 @@ export function importCatalogCsv(text: string): CatalogImportResult {
         .from(catalogItems)
         .where(eq(catalogItems.id, row.id))
         .get();
+      // Import path always stamps source=csv + date (honest pricing layer).
+      const priceSource = row.source === "manual" ? "manual" : "csv";
       if (existing) {
         db.update(catalogItems)
           .set({
             unitPriceUsd: row.unitPriceUsd,
-            priceSource: "csv",
+            priceSource,
             pricedAt: row.pricedAt || pricedAtDefault,
             isEstimate: row.isEstimate ?? true,
             notes: row.notes !== undefined ? row.notes : existing.notes,
@@ -430,17 +447,19 @@ export function importCatalogCsv(text: string): CatalogImportResult {
             unitPriceUsd: row.unitPriceUsd,
             notes: row.notes ?? "Importado CSV",
             isEstimate: row.isEstimate ?? true,
-            priceSource: "csv",
+            priceSource,
             pricedAt: row.pricedAt || pricedAtDefault,
           })
           .run();
         inserted++;
+      } else {
+        skipped++;
       }
     }
   });
   apply();
 
-  return { updated, inserted, rows };
+  return { updated, inserted, skipped, rows, validation };
 }
 
 export function buildCsv(detail: ProjectDetail): string {
