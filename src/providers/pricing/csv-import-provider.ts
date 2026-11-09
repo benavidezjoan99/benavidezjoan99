@@ -55,6 +55,10 @@ export function parseCatalogCsv(text: string): CsvCatalogRow[] {
     const unitPriceUsd = Number(priceRaw);
     if (!id || !Number.isFinite(unitPriceUsd)) continue;
     const estRaw = iEst >= 0 ? (cols[iEst] ?? "").trim().toLowerCase() : "";
+    // Import siempre es csv — nunca aceptar "live" ni otras fuentes fingidas.
+    const rawSource = iSource >= 0 ? (cols[iSource] ?? "").trim().toLowerCase() : "";
+    const source =
+      !rawSource || rawSource === "live" || rawSource === "en vivo" ? "csv" : rawSource === "manual" ? "manual" : "csv";
     out.push({
       id,
       name: iName >= 0 ? cols[iName]?.trim() : undefined,
@@ -62,7 +66,7 @@ export function parseCatalogCsv(text: string): CsvCatalogRow[] {
       unit: iUnit >= 0 ? cols[iUnit]?.trim() : undefined,
       unitPriceUsd,
       notes: iNotes >= 0 ? cols[iNotes]?.trim() : undefined,
-      source: iSource >= 0 ? cols[iSource]?.trim() || "csv" : "csv",
+      source,
       pricedAt:
         iPricedAt >= 0 && cols[iPricedAt]?.trim()
           ? cols[iPricedAt].trim()

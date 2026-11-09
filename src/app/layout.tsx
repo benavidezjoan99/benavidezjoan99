@@ -34,7 +34,15 @@ export default function RootLayout({
               <Link href="/" className="brand-mark text-2xl text-[var(--bg-deep)] sm:text-3xl">
                 ObraCalc <span className="text-[var(--accent)]">PR</span>
               </Link>
-              <p className="text-sm text-[var(--ink-muted)]">{t("brandTagline")}</p>
+              <nav className="flex items-center gap-4 text-sm">
+                <Link
+                  href="/catalogo"
+                  className="font-medium text-[var(--bg-deep)] underline-offset-2 hover:underline"
+                >
+                  {t("nav.catalog")}
+                </Link>
+                <p className="hidden text-[var(--ink-muted)] sm:block">{t("brandTagline")}</p>
+              </nav>
             </div>
           </header>
           <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10">{children}</main>

@@ -19,21 +19,28 @@ export function CatalogImportPanel() {
     });
     const data = await res.json();
     if (!res.ok) {
-      setError(data.error || "Error al importar");
+      const detail =
+        Array.isArray(data.errors) && data.errors.length
+          ? `\n${data.errors.map((e: { message: string }) => e.message).join("\n")}`
+          : "";
+      setError((data.error || "Error al importar") + detail);
       return;
     }
     setStatus(
-      `Importado: ${data.updated} actualizados, ${data.inserted} nuevos (${data.totalRows} filas).`,
+      `Importado: ${data.updated} actualizados, ${data.inserted} nuevos` +
+        (data.skipped ? `, ${data.skipped} omitidos` : "") +
+        ` (${data.totalRows} filas). Fuente=csv.`,
     );
+    // Refresh catalog view if we're on /catalogo
+    if (typeof window !== "undefined" && window.location.pathname.includes("catalogo")) {
+      window.location.reload();
+    }
   }
 
   return (
     <section className="fade-in-delay space-y-3 border-t border-[var(--line)] pt-6">
-      <h2 className="brand-mark text-2xl text-[var(--bg-deep)]">Catálogo</h2>
-      <p className="text-sm text-[var(--ink-muted)]">
-        Exporta el catálogo semilla, edita precios en CSV y vuelve a importar. Fuente se marca como{" "}
-        <code className="text-xs">csv</code> con fecha. Sin scraping.
-      </p>
+      <h2 className="brand-mark text-2xl text-[var(--bg-deep)]">{t("catalog.importTitle")}</h2>
+      <p className="text-sm text-[var(--ink-muted)]">{t("catalog.importHelp")}</p>
       <div className="flex flex-wrap items-center gap-3">
         <a
           href="/api/catalog?format=csv"
@@ -50,11 +57,19 @@ export function CatalogImportPanel() {
             onChange={(e) => void onFile(e.target.files?.[0] ?? null)}
           />
         </label>
+        <a
+          href="/catalogo"
+          className="rounded-md border border-[var(--line)] bg-white px-4 py-2 text-sm font-medium hover:bg-[var(--surface)]"
+        >
+          {t("catalog.viewLink")}
+        </a>
       </div>
       {(status || error) && (
-        <p className={`text-sm ${error ? "text-[var(--danger)]" : "text-[var(--accent-strong)]"}`}>
+        <pre
+          className={`whitespace-pre-wrap text-sm ${error ? "text-[var(--danger)]" : "text-[var(--accent-strong)]"}`}
+        >
           {error || status}
-        </p>
+        </pre>
       )}
     </section>
   );

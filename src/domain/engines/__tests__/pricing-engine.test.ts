@@ -103,4 +103,40 @@ bloque-8,Bloque 8 pulg,bloque_mamposteria,u,3.25,csv,2026-11-02,false
       expect(q[0].source).toBe("csv");
     });
   });
+
+  it("falls back to seed catalog unitPrice when no price records", () => {
+    const resolved = resolvePrice({
+      catalogItemId: "bloque-8",
+      catalog,
+    });
+    expect(resolved?.source).toBe("seed");
+    expect(resolved?.isEstimate).toBe(true);
+    expect(resolved?.unitPriceUsd).toBe(2.75);
+    expect(resolved?.pricedAt).toBeNull();
+  });
+
+  it("prefers newer csv pricedAt when multiple csv rows", () => {
+    const resolved = resolvePrice({
+      catalogItemId: "bloque-8",
+      catalog,
+      prices: [
+        {
+          catalogItemId: "bloque-8",
+          unitPriceUsd: 2.8,
+          source: "csv",
+          pricedAt: "2026-01-01",
+          isEstimate: false,
+        },
+        {
+          catalogItemId: "bloque-8",
+          unitPriceUsd: 3.0,
+          source: "csv",
+          pricedAt: "2026-11-08",
+          isEstimate: false,
+        },
+      ],
+    });
+    expect(resolved?.unitPriceUsd).toBe(3.0);
+    expect(resolved?.pricedAt).toBe("2026-11-08");
+  });
 });

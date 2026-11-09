@@ -1,5 +1,9 @@
 import type { CatalogCategory } from "./types";
 
+/** Fecha fija del catálogo DEMO — nunca fingir “live”. */
+export const SEED_CATALOG_DATE = "2026-11-08";
+export const SEED_PRICE_SOURCE = "seed" as const;
+
 export interface SeedCatalogItem {
   id: string;
   name: string;
@@ -7,21 +11,36 @@ export interface SeedCatalogItem {
   unit: string;
   unitPriceUsd: number;
   notes: string;
+  /** Siempre seed/DEMO en semilla. */
+  priceSource?: typeof SEED_PRICE_SOURCE;
+  pricedAt?: string;
 }
 
+const demo = (detail: string) =>
+  `DEMO/seed · ${detail} · verificar en ferretería PR (HD/Ace) · no es precio en vivo`;
+
 /**
- * Catálogo semilla orientado a retail EE.UU./PR (categorías tipo ferretería grande).
- * Precios en USD marcados como estimaciones orientativas — NO scraping ni APIs en vivo.
+ * Catálogo semilla enriquecido orientado a retail EE.UU./Puerto Rico.
+ * Precios en USD marcados como DEMO/seed — NO scraping ni APIs en vivo.
+ * Cada ítem lleva fuente `seed` y fecha fija al insertar en SQLite.
  */
 export const SEED_CATALOG: SeedCatalogItem[] = [
-  // Cemento y agregados
+  // —— Cemento y agregados ——
   {
     id: "cem-portland-94",
     name: "Cemento Portland Tipo I (saco 94 lb)",
     category: "cemento_agregados",
     unit: "saco",
     unitPriceUsd: 12.5,
-    notes: "Estimación retail PR/US",
+    notes: demo("saco típico obra gruesa"),
+  },
+  {
+    id: "cem-portland-tipo2",
+    name: "Cemento Portland Tipo II (saco 94 lb)",
+    category: "cemento_agregados",
+    unit: "saco",
+    unitPriceUsd: 13.25,
+    notes: demo("sulfatos / fundaciones"),
   },
   {
     id: "arena-yd",
@@ -29,7 +48,7 @@ export const SEED_CATALOG: SeedCatalogItem[] = [
     category: "cemento_agregados",
     unit: "yd³",
     unitPriceUsd: 55,
-    notes: "Estimación entregada",
+    notes: demo("entregada"),
   },
   {
     id: "grava-yd",
@@ -37,7 +56,7 @@ export const SEED_CATALOG: SeedCatalogItem[] = [
     category: "cemento_agregados",
     unit: "yd³",
     unitPriceUsd: 65,
-    notes: "Estimación entregada",
+    notes: demo("entregada"),
   },
   {
     id: "hormigon-listo",
@@ -45,17 +64,41 @@ export const SEED_CATALOG: SeedCatalogItem[] = [
     category: "cemento_agregados",
     unit: "yd³",
     unitPriceUsd: 165,
-    notes: "Estimación con entrega local",
+    notes: demo("con entrega local"),
+  },
+  {
+    id: "hormigon-4000",
+    name: "Hormigón premezclado 4000 psi",
+    category: "cemento_agregados",
+    unit: "yd³",
+    unitPriceUsd: 185,
+    notes: demo("losa / estructura"),
+  },
+  {
+    id: "relleno-compactable",
+    name: "Relleno compactable (select fill)",
+    category: "cemento_agregados",
+    unit: "yd³",
+    unitPriceUsd: 42,
+    notes: demo("nivelación"),
+  },
+  {
+    id: "cal-hidratada",
+    name: "Cal hidratada (saco)",
+    category: "cemento_agregados",
+    unit: "saco",
+    unitPriceUsd: 9.5,
+    notes: demo("mezclas / revoque"),
   },
 
-  // Bloque
+  // —— Bloque y mampostería ——
   {
     id: "bloque-4",
     name: "Bloque de concreto 4\"",
     category: "bloque_mamposteria",
     unit: "u",
     unitPriceUsd: 1.85,
-    notes: "Estimación",
+    notes: demo("tabiquería"),
   },
   {
     id: "bloque-6",
@@ -63,7 +106,7 @@ export const SEED_CATALOG: SeedCatalogItem[] = [
     category: "bloque_mamposteria",
     unit: "u",
     unitPriceUsd: 2.35,
-    notes: "Estimación",
+    notes: demo("paredes ligeras"),
   },
   {
     id: "bloque-8",
@@ -71,7 +114,23 @@ export const SEED_CATALOG: SeedCatalogItem[] = [
     category: "bloque_mamposteria",
     unit: "u",
     unitPriceUsd: 2.75,
-    notes: "Estimación",
+    notes: demo("pared estructural típica PR"),
+  },
+  {
+    id: "bloque-12",
+    name: "Bloque de concreto 12\"",
+    category: "bloque_mamposteria",
+    unit: "u",
+    unitPriceUsd: 4.15,
+    notes: demo("muros gruesos / retenes"),
+  },
+  {
+    id: "bloque-u-lintel",
+    name: "Bloque U / dintel",
+    category: "bloque_mamposteria",
+    unit: "u",
+    unitPriceUsd: 3.95,
+    notes: demo("cargas horizontales"),
   },
   {
     id: "mortero-saco",
@@ -79,17 +138,25 @@ export const SEED_CATALOG: SeedCatalogItem[] = [
     category: "bloque_mamposteria",
     unit: "saco",
     unitPriceUsd: 11.5,
-    notes: "Estimación",
+    notes: demo("Tipo S / N"),
+  },
+  {
+    id: "revoque-saco",
+    name: "Revoque / stucco base (saco)",
+    category: "bloque_mamposteria",
+    unit: "saco",
+    unitPriceUsd: 14,
+    notes: demo("acabado exterior"),
   },
 
-  // Acero
+  // —— Acero ——
   {
     id: "varilla-3",
     name: "Varilla #3 (3/8\")",
     category: "acero",
     unit: "barra 20'",
     unitPriceUsd: 8.5,
-    notes: "Estimación",
+    notes: demo("amarre / temperatura"),
   },
   {
     id: "varilla-4",
@@ -97,7 +164,7 @@ export const SEED_CATALOG: SeedCatalogItem[] = [
     category: "acero",
     unit: "barra 20'",
     unitPriceUsd: 14.5,
-    notes: "Estimación",
+    notes: demo("columnas / losa"),
   },
   {
     id: "varilla-5",
@@ -105,7 +172,15 @@ export const SEED_CATALOG: SeedCatalogItem[] = [
     category: "acero",
     unit: "barra 20'",
     unitPriceUsd: 22,
-    notes: "Estimación",
+    notes: demo("vigas / columnas"),
+  },
+  {
+    id: "varilla-6",
+    name: "Varilla #6 (3/4\")",
+    category: "acero",
+    unit: "barra 20'",
+    unitPriceUsd: 31,
+    notes: demo("cargas mayores"),
   },
   {
     id: "alambre-amarrar",
@@ -113,7 +188,7 @@ export const SEED_CATALOG: SeedCatalogItem[] = [
     category: "acero",
     unit: "lb",
     unitPriceUsd: 2.25,
-    notes: "Estimación",
+    notes: demo("atado de varilla"),
   },
   {
     id: "malla-electrosoldada",
@@ -121,17 +196,33 @@ export const SEED_CATALOG: SeedCatalogItem[] = [
     category: "acero",
     unit: "hoja",
     unitPriceUsd: 28,
-    notes: "Estimación",
+    notes: demo("losa sobre terreno"),
+  },
+  {
+    id: "estribos-3-8",
+    name: "Estribos #3 prefabricados",
+    category: "acero",
+    unit: "u",
+    unitPriceUsd: 1.35,
+    notes: demo("columnas"),
   },
 
-  // Madera
+  // —— Madera ——
   {
     id: "madera-2x4",
     name: "Madera tratada 2x4x8'",
     category: "madera",
     unit: "u",
     unitPriceUsd: 7.5,
-    notes: "Estimación",
+    notes: demo("PT / humedad PR"),
+  },
+  {
+    id: "madera-2x4-10",
+    name: "Madera tratada 2x4x10'",
+    category: "madera",
+    unit: "u",
+    unitPriceUsd: 9.25,
+    notes: demo("PT"),
   },
   {
     id: "madera-2x6",
@@ -139,7 +230,23 @@ export const SEED_CATALOG: SeedCatalogItem[] = [
     category: "madera",
     unit: "u",
     unitPriceUsd: 12,
-    notes: "Estimación",
+    notes: demo("PT"),
+  },
+  {
+    id: "madera-2x6-12",
+    name: "Madera tratada 2x6x12'",
+    category: "madera",
+    unit: "u",
+    unitPriceUsd: 18.5,
+    notes: demo("vigas / techo"),
+  },
+  {
+    id: "madera-4x4",
+    name: "Poste tratado 4x4x8'",
+    category: "madera",
+    unit: "u",
+    unitPriceUsd: 22,
+    notes: demo("soportes / porche"),
   },
   {
     id: "plywood-3-4",
@@ -147,7 +254,7 @@ export const SEED_CATALOG: SeedCatalogItem[] = [
     category: "madera",
     unit: "hoja",
     unitPriceUsd: 48,
-    notes: "Estimación",
+    notes: demo("piso / formwork"),
   },
   {
     id: "osb-7-16",
@@ -155,17 +262,33 @@ export const SEED_CATALOG: SeedCatalogItem[] = [
     category: "madera",
     unit: "hoja",
     unitPriceUsd: 22,
-    notes: "Estimación",
+    notes: demo("sheathing"),
+  },
+  {
+    id: "liston-1x3",
+    name: "Listón / furring 1x3x8'",
+    category: "madera",
+    unit: "u",
+    unitPriceUsd: 3.75,
+    notes: demo("cielorraso / drywall"),
   },
 
-  // Techos
+  // —— Techos ——
   {
     id: "zinc-corrugado",
     name: "Lámina zinc corrugada",
     category: "techos",
     unit: "hoja",
     unitPriceUsd: 32,
-    notes: "Estimación",
+    notes: demo("cubierta típica PR"),
+  },
+  {
+    id: "zinc-galvalume",
+    name: "Lámina Galvalume / aluzinc",
+    category: "techos",
+    unit: "hoja",
+    unitPriceUsd: 38,
+    notes: demo("mayor vida útil"),
   },
   {
     id: "tornillos-techo",
@@ -173,7 +296,7 @@ export const SEED_CATALOG: SeedCatalogItem[] = [
     category: "techos",
     unit: "caja 100",
     unitPriceUsd: 18,
-    notes: "Estimación",
+    notes: demo("fijación zinc"),
   },
   {
     id: "aislante-rollo",
@@ -181,17 +304,41 @@ export const SEED_CATALOG: SeedCatalogItem[] = [
     category: "techos",
     unit: "rollo/hoja",
     unitPriceUsd: 35,
-    notes: "Estimación",
+    notes: demo("clima tropical"),
+  },
+  {
+    id: "cumbrera-zinc",
+    name: "Cumbrera / ridge zinc",
+    category: "techos",
+    unit: "u",
+    unitPriceUsd: 24,
+    notes: demo("cierre de cumbrera"),
+  },
+  {
+    id: "canal-lluvia",
+    name: "Canalón / gutter PVC o aluminio",
+    category: "techos",
+    unit: "ft",
+    unitPriceUsd: 6.5,
+    notes: demo("drenaje de techo"),
   },
 
-  // Eléctrico
+  // —— Eléctrico ——
   {
     id: "cable-12-romex",
     name: "Cable Romex 12/2",
     category: "electrico",
     unit: "ft",
     unitPriceUsd: 0.85,
-    notes: "Estimación",
+    notes: demo("circuitos 20A"),
+  },
+  {
+    id: "cable-12-3",
+    name: "Cable Romex 12/3",
+    category: "electrico",
+    unit: "ft",
+    unitPriceUsd: 1.15,
+    notes: demo("3-way / split"),
   },
   {
     id: "cable-14-romex",
@@ -199,7 +346,31 @@ export const SEED_CATALOG: SeedCatalogItem[] = [
     category: "electrico",
     unit: "ft",
     unitPriceUsd: 0.65,
-    notes: "Estimación",
+    notes: demo("circuitos 15A"),
+  },
+  {
+    id: "cable-10-romex",
+    name: "Cable Romex 10/2",
+    category: "electrico",
+    unit: "ft",
+    unitPriceUsd: 1.45,
+    notes: demo("secadora / AC pequeño"),
+  },
+  {
+    id: "thhn-12",
+    name: "Alambre THHN #12 (por pie)",
+    category: "electrico",
+    unit: "ft",
+    unitPriceUsd: 0.55,
+    notes: demo("conduit"),
+  },
+  {
+    id: "conduit-pvc-1-2",
+    name: "Conduit PVC 1/2\"",
+    category: "electrico",
+    unit: "ft",
+    unitPriceUsd: 0.95,
+    notes: demo("enterrado / empotrado"),
   },
   {
     id: "breaker-20a",
@@ -207,7 +378,15 @@ export const SEED_CATALOG: SeedCatalogItem[] = [
     category: "electrico",
     unit: "u",
     unitPriceUsd: 12,
-    notes: "Estimación",
+    notes: demo("panel residencial"),
+  },
+  {
+    id: "breaker-30a-2p",
+    name: "Breaker 30A bipolar",
+    category: "electrico",
+    unit: "u",
+    unitPriceUsd: 28,
+    notes: demo("AC / calentador"),
   },
   {
     id: "panel-100a",
@@ -215,7 +394,15 @@ export const SEED_CATALOG: SeedCatalogItem[] = [
     category: "electrico",
     unit: "u",
     unitPriceUsd: 145,
-    notes: "Estimación",
+    notes: demo("casa típica"),
+  },
+  {
+    id: "panel-200a",
+    name: "Panel eléctrico 200A",
+    category: "electrico",
+    unit: "u",
+    unitPriceUsd: 265,
+    notes: demo("casa grande / futuro"),
   },
   {
     id: "tomacorriente",
@@ -223,7 +410,15 @@ export const SEED_CATALOG: SeedCatalogItem[] = [
     category: "electrico",
     unit: "u",
     unitPriceUsd: 3.5,
-    notes: "Estimación",
+    notes: demo("15/20A"),
+  },
+  {
+    id: "tomacorriente-gfci",
+    name: "Tomacorriente GFCI",
+    category: "electrico",
+    unit: "u",
+    unitPriceUsd: 18,
+    notes: demo("baño / cocina / exterior"),
   },
   {
     id: "interruptor",
@@ -231,7 +426,7 @@ export const SEED_CATALOG: SeedCatalogItem[] = [
     category: "electrico",
     unit: "u",
     unitPriceUsd: 2.75,
-    notes: "Estimación",
+    notes: demo("iluminación"),
   },
   {
     id: "caja-electrica",
@@ -239,17 +434,25 @@ export const SEED_CATALOG: SeedCatalogItem[] = [
     category: "electrico",
     unit: "u",
     unitPriceUsd: 1.85,
-    notes: "Estimación",
+    notes: demo("empotrar"),
+  },
+  {
+    id: "lampara-led",
+    name: "Lámpara / downlight LED",
+    category: "electrico",
+    unit: "u",
+    unitPriceUsd: 22,
+    notes: demo("iluminación interior"),
   },
 
-  // Plomería
+  // —— Plomería ——
   {
     id: "pvc-sch40-1-2",
     name: "Tubo PVC Sch 40 1/2\"",
     category: "plomeria",
     unit: "ft",
     unitPriceUsd: 1.15,
-    notes: "Estimación",
+    notes: demo("agua fría/caliente"),
   },
   {
     id: "pvc-sch40-3-4",
@@ -257,7 +460,15 @@ export const SEED_CATALOG: SeedCatalogItem[] = [
     category: "plomeria",
     unit: "ft",
     unitPriceUsd: 1.65,
-    notes: "Estimación",
+    notes: demo("línea principal"),
+  },
+  {
+    id: "pvc-sch40-1",
+    name: "Tubo PVC Sch 40 1\"",
+    category: "plomeria",
+    unit: "ft",
+    unitPriceUsd: 2.35,
+    notes: demo("entrada de servicio"),
   },
   {
     id: "pvc-dwv-2",
@@ -265,7 +476,39 @@ export const SEED_CATALOG: SeedCatalogItem[] = [
     category: "plomeria",
     unit: "ft",
     unitPriceUsd: 2.4,
-    notes: "Estimación",
+    notes: demo("drenaje"),
+  },
+  {
+    id: "pvc-dwv-3",
+    name: "Tubo PVC DWV 3\"",
+    category: "plomeria",
+    unit: "ft",
+    unitPriceUsd: 3.85,
+    notes: demo("cloaca / stack"),
+  },
+  {
+    id: "pvc-dwv-4",
+    name: "Tubo PVC DWV 4\"",
+    category: "plomeria",
+    unit: "ft",
+    unitPriceUsd: 5.5,
+    notes: demo("salida principal"),
+  },
+  {
+    id: "codo-pvc-1-2",
+    name: "Codo PVC 90° 1/2\"",
+    category: "plomeria",
+    unit: "u",
+    unitPriceUsd: 0.85,
+    notes: demo("accesorio"),
+  },
+  {
+    id: "pegamento-pvc",
+    name: "Cemento / pegamento PVC",
+    category: "plomeria",
+    unit: "lata",
+    unitPriceUsd: 9.5,
+    notes: demo("unión solvente"),
   },
   {
     id: "inodoro",
@@ -273,7 +516,7 @@ export const SEED_CATALOG: SeedCatalogItem[] = [
     category: "plomeria",
     unit: "u",
     unitPriceUsd: 185,
-    notes: "Estimación gama media",
+    notes: demo("gama media"),
   },
   {
     id: "lavamanos",
@@ -281,7 +524,7 @@ export const SEED_CATALOG: SeedCatalogItem[] = [
     category: "plomeria",
     unit: "u",
     unitPriceUsd: 120,
-    notes: "Estimación gama media",
+    notes: demo("gama media"),
   },
   {
     id: "griferia-bano",
@@ -289,7 +532,15 @@ export const SEED_CATALOG: SeedCatalogItem[] = [
     category: "plomeria",
     unit: "juego",
     unitPriceUsd: 85,
-    notes: "Estimación",
+    notes: demo("lavamanos"),
+  },
+  {
+    id: "ducha-mezcladora",
+    name: "Mezcladora de ducha",
+    category: "plomeria",
+    unit: "u",
+    unitPriceUsd: 95,
+    notes: demo("baño"),
   },
   {
     id: "fregadero",
@@ -297,7 +548,7 @@ export const SEED_CATALOG: SeedCatalogItem[] = [
     category: "plomeria",
     unit: "u",
     unitPriceUsd: 160,
-    notes: "Estimación",
+    notes: demo("doble tina"),
   },
   {
     id: "calentador",
@@ -305,17 +556,33 @@ export const SEED_CATALOG: SeedCatalogItem[] = [
     category: "plomeria",
     unit: "u",
     unitPriceUsd: 480,
-    notes: "Estimación",
+    notes: demo("residencial"),
+  },
+  {
+    id: "bomba-cisterna",
+    name: "Bomba de agua / cisterna (1/2 HP)",
+    category: "plomeria",
+    unit: "u",
+    unitPriceUsd: 285,
+    notes: demo("común en PR"),
+  },
+  {
+    id: "valvula-bola-3-4",
+    name: "Válvula de bola 3/4\"",
+    category: "plomeria",
+    unit: "u",
+    unitPriceUsd: 12,
+    notes: demo("corte de servicio"),
   },
 
-  // Acabados
+  // —— Acabados ——
   {
     id: "ceramica-piso",
     name: "Cerámica de piso 12x12 / 18x18",
     category: "acabados",
     unit: "ft²",
     unitPriceUsd: 2.85,
-    notes: "Estimación material",
+    notes: demo("material"),
   },
   {
     id: "porcelanato",
@@ -323,7 +590,15 @@ export const SEED_CATALOG: SeedCatalogItem[] = [
     category: "acabados",
     unit: "ft²",
     unitPriceUsd: 4.5,
-    notes: "Estimación material",
+    notes: demo("material"),
+  },
+  {
+    id: "ceramica-pared",
+    name: "Cerámica de pared / baño",
+    category: "acabados",
+    unit: "ft²",
+    unitPriceUsd: 3.25,
+    notes: demo("ducha / splash"),
   },
   {
     id: "adhesivo-ceramica",
@@ -331,7 +606,7 @@ export const SEED_CATALOG: SeedCatalogItem[] = [
     category: "acabados",
     unit: "saco",
     unitPriceUsd: 18,
-    notes: "Estimación",
+    notes: demo("instalación"),
   },
   {
     id: "grout",
@@ -339,7 +614,7 @@ export const SEED_CATALOG: SeedCatalogItem[] = [
     category: "acabados",
     unit: "saco",
     unitPriceUsd: 16,
-    notes: "Estimación",
+    notes: demo("juntas"),
   },
   {
     id: "drywall-1-2",
@@ -347,7 +622,15 @@ export const SEED_CATALOG: SeedCatalogItem[] = [
     category: "acabados",
     unit: "hoja",
     unitPriceUsd: 16,
-    notes: "Estimación",
+    notes: demo("interior"),
+  },
+  {
+    id: "drywall-mr",
+    name: "Drywall resistente a humedad 1/2\"",
+    category: "acabados",
+    unit: "hoja",
+    unitPriceUsd: 19.5,
+    notes: demo("baños / cocina"),
   },
   {
     id: "compound",
@@ -355,7 +638,7 @@ export const SEED_CATALOG: SeedCatalogItem[] = [
     category: "acabados",
     unit: "gal",
     unitPriceUsd: 18,
-    notes: "Estimación",
+    notes: demo("acabado gypsum"),
   },
   {
     id: "puerta-interior",
@@ -363,7 +646,15 @@ export const SEED_CATALOG: SeedCatalogItem[] = [
     category: "acabados",
     unit: "u",
     unitPriceUsd: 145,
-    notes: "Estimación",
+    notes: demo("precolgada"),
+  },
+  {
+    id: "puerta-exterior",
+    name: "Puerta exterior acero/fibra + marco",
+    category: "acabados",
+    unit: "u",
+    unitPriceUsd: 320,
+    notes: demo("entrada"),
   },
   {
     id: "ventana-aluminio",
@@ -371,7 +662,7 @@ export const SEED_CATALOG: SeedCatalogItem[] = [
     category: "acabados",
     unit: "u",
     unitPriceUsd: 220,
-    notes: "Estimación",
+    notes: demo("huracán / típica PR"),
   },
   {
     id: "gabinetes-cocina",
@@ -379,7 +670,7 @@ export const SEED_CATALOG: SeedCatalogItem[] = [
     category: "acabados",
     unit: "ft lineal",
     unitPriceUsd: 95,
-    notes: "Estimación gama media",
+    notes: demo("gama media"),
   },
   {
     id: "closet-rods",
@@ -387,17 +678,25 @@ export const SEED_CATALOG: SeedCatalogItem[] = [
     category: "acabados",
     unit: "juego",
     unitPriceUsd: 65,
-    notes: "Estimación",
+    notes: demo("dormitorio"),
+  },
+  {
+    id: "zocalo-mdf",
+    name: "Zócalo / baseboard MDF",
+    category: "acabados",
+    unit: "ft",
+    unitPriceUsd: 1.85,
+    notes: demo("acabado piso-pared"),
   },
 
-  // Pintura
+  // —— Pintura ——
   {
     id: "primer-gal",
     name: "Primer / sellador (galón)",
     category: "pintura",
     unit: "gal",
     unitPriceUsd: 28,
-    notes: "Estimación",
+    notes: demo("base"),
   },
   {
     id: "pintura-interior",
@@ -405,7 +704,15 @@ export const SEED_CATALOG: SeedCatalogItem[] = [
     category: "pintura",
     unit: "gal",
     unitPriceUsd: 38,
-    notes: "Estimación",
+    notes: demo("acabado mate/satin"),
+  },
+  {
+    id: "pintura-interior-5gal",
+    name: "Pintura interior látex (cubeta 5 gal)",
+    category: "pintura",
+    unit: "cubeta",
+    unitPriceUsd: 165,
+    notes: demo("obra nueva"),
   },
   {
     id: "pintura-exterior",
@@ -413,7 +720,15 @@ export const SEED_CATALOG: SeedCatalogItem[] = [
     category: "pintura",
     unit: "gal",
     unitPriceUsd: 45,
-    notes: "Estimación",
+    notes: demo("clima tropical"),
+  },
+  {
+    id: "pintura-techo",
+    name: "Pintura / elastómero para techo",
+    category: "pintura",
+    unit: "gal",
+    unitPriceUsd: 52,
+    notes: demo("reflectivo"),
   },
   {
     id: "brochas-rodillos",
@@ -421,17 +736,25 @@ export const SEED_CATALOG: SeedCatalogItem[] = [
     category: "pintura",
     unit: "juego",
     unitPriceUsd: 25,
-    notes: "Estimación",
+    notes: demo("aplicación"),
+  },
+  {
+    id: "cinta-pintor",
+    name: "Cinta de pintor",
+    category: "pintura",
+    unit: "rollo",
+    unitPriceUsd: 6.5,
+    notes: demo("protección"),
   },
 
-  // Misc
+  // —— Herramientas / misceláneos ——
   {
     id: "impermeabilizante",
     name: "Impermeabilizante para techo/pared",
     category: "herramientas_misc",
     unit: "gal",
     unitPriceUsd: 42,
-    notes: "Estimación",
+    notes: demo("humedad PR"),
   },
   {
     id: "silicona",
@@ -439,7 +762,7 @@ export const SEED_CATALOG: SeedCatalogItem[] = [
     category: "herramientas_misc",
     unit: "tubo",
     unitPriceUsd: 7.5,
-    notes: "Estimación",
+    notes: demo("juntas / baños"),
   },
   {
     id: "tornilleria",
@@ -447,7 +770,7 @@ export const SEED_CATALOG: SeedCatalogItem[] = [
     category: "herramientas_misc",
     unit: "caja",
     unitPriceUsd: 22,
-    notes: "Estimación",
+    notes: demo("fijaciones"),
   },
   {
     id: "transporte",
@@ -455,6 +778,45 @@ export const SEED_CATALOG: SeedCatalogItem[] = [
     category: "herramientas_misc",
     unit: "viaje",
     unitPriceUsd: 85,
-    notes: "Estimación local PR",
+    notes: demo("local PR"),
+  },
+  {
+    id: "cintas-medir",
+    name: "Cinta métrica / niveles (kit)",
+    category: "herramientas_misc",
+    unit: "juego",
+    unitPriceUsd: 35,
+    notes: demo("herramienta básica"),
+  },
+  {
+    id: "epp-basico",
+    name: "EPP básico (casco, guantes, gafas)",
+    category: "herramientas_misc",
+    unit: "juego",
+    unitPriceUsd: 48,
+    notes: demo("seguridad obra"),
   },
 ];
+
+/** Unidades habituales en el catálogo ObraCalc (validación CSV). */
+export const ALLOWED_CATALOG_UNITS = [
+  "u",
+  "saco",
+  "yd³",
+  "ft",
+  "ft²",
+  "ft lineal",
+  "gal",
+  "cubeta",
+  "hoja",
+  "rollo",
+  "rollo/hoja",
+  "lb",
+  "barra 20'",
+  "caja",
+  "caja 100",
+  "juego",
+  "lata",
+  "tubo",
+  "viaje",
+] as const;
