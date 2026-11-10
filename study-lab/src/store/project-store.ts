@@ -81,10 +81,14 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => ({
             p.title,
             p.overview,
             p.category,
+            p.difficulty,
+            p.businessScenario,
             ...p.technologies,
             ...p.requiredSoftware,
             ...p.certObjectives,
             ...p.examDomains,
+            ...p.careerTracks,
+            ...p.outcomes,
             ...(p.curriculumOrder != null ? [String(p.curriculumOrder), `#${p.curriculumOrder}`] : []),
           ]
             .join(' ')

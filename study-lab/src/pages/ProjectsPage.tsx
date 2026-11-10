@@ -22,13 +22,16 @@ export function ProjectsPage() {
         </p>
       </div>
       <WeakDomainRecommendations />
-      <ProjectFiltersBar />
+      <ProjectFiltersBar resultCount={projects.length} />
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {projects.map((project) => (
           <ProjectCard key={project.id} project={project} />
         ))}
         {!projects.length && (
-          <p className="text-sm text-muted-foreground">No projects match the current filters.</p>
+          <p className="text-sm text-muted-foreground">
+            No projects match the current filters. Clear a chip above or reset filters to browse the
+            full library.
+          </p>
         )}
       </div>
     </div>

@@ -1,5 +1,8 @@
 import type {
+  ArchitectureDiagram,
+  ChallengeSeverity,
   Deliverable,
+  EvidenceRubricItem,
   Milestone,
   ProjectDoc,
   TroubleshootingChallenge,
@@ -32,10 +35,24 @@ export const TOOLS = {
   fastapi: 'FastAPI + Uvicorn (local)',
 } as const
 
+const MEASURABLE_NETWORK_ACCEPTANCE = [
+  'Topology diagram matches the written scope (device count, links, labels)',
+  'Addressing plan has no overlapping networks; usable ranges documented',
+  'At least one success and one intentional-failure case captured with screenshots',
+]
+
+const MEASURABLE_LAB_ACCEPTANCE = [
+  'Written plan matches every technical requirement (checkbox against section C)',
+  'External tools and versions listed in the evidence pack',
+  'Verification checklist completed with dated notes',
+  'At least one failure/edge case documented with root-cause notes (not just “fixed”)',
+]
+
 export function standardMilestones(
   designTasks: string[],
   buildTasks: string[],
   verifyTasks: string[],
+  hints?: { design?: string; build?: string; verify?: string },
 ): Milestone[] {
   return [
     {
@@ -43,27 +60,38 @@ export function standardMilestones(
       title: 'Design & documentation',
       tasks: designTasks,
       acceptanceCriteria: [
-        'Topology diagram matches the written scope',
-        'Addressing plan has no overlapping networks',
+        ...MEASURABLE_NETWORK_ACCEPTANCE.slice(0, 2),
+        'Port/device role table complete before lab build starts',
       ],
+      hint:
+        hints?.design ??
+        'Name devices and links before opening Packet Tracer; mismatches usually start in the diagram.',
     },
     {
       id: 'm2',
       title: 'External lab build',
       tasks: buildTasks,
       acceptanceCriteria: [
-        'Lab built only in listed external tools',
-        'Screenshots or config exports captured as evidence',
+        'Lab built only in listed external tools (no in-app simulator)',
+        'Running-config / topology export or equivalent screenshots saved with filenames',
+        'Host and gateway addressing match the Section E worksheet exactly',
       ],
+      hint:
+        hints?.build ??
+        'Configure L2 before L3. Capture show/ipconfig outputs as you go — do not wait until the end.',
     },
     {
       id: 'm3',
       title: 'Verification & evidence',
       tasks: verifyTasks,
       acceptanceCriteria: [
-        'Verification checklist completed',
-        'At least one failed case documented with root cause notes',
+        ...MEASURABLE_NETWORK_ACCEPTANCE.slice(2),
+        'Ping/traceroute (or track-equivalent) matrix filled with pass/fail marks',
+        'Evidence filenames referenced in milestone notes',
       ],
+      hint:
+        hints?.verify ??
+        'Prove both success and a controlled failure. A green ping alone is thin evidence.',
     },
   ]
 }
@@ -74,16 +102,19 @@ export function labMilestones(
   buildTasks: string[],
   verifyTasks: string[],
   labels?: { design?: string; build?: string; verify?: string },
+  hints?: { design?: string; build?: string; verify?: string },
 ): Milestone[] {
   return [
     {
       id: 'm1',
       title: labels?.design ?? 'Design & documentation',
       tasks: designTasks,
-      acceptanceCriteria: [
-        'Written plan matches the project requirements',
-        'External tools and versions listed',
-      ],
+      acceptanceCriteria: MEASURABLE_LAB_ACCEPTANCE.slice(0, 2).concat([
+        'Success criteria written as observable outputs (commands, row counts, UI states)',
+      ]),
+      hint:
+        hints?.design ??
+        'Write the acceptance tests first — what exact output proves each requirement?',
     },
     {
       id: 'm2',
@@ -91,17 +122,23 @@ export function labMilestones(
       tasks: buildTasks,
       acceptanceCriteria: [
         'Work completed only in listed external tools',
-        'Screenshots, exports, or source files captured as evidence',
+        'Screenshots, exports, or source files captured as evidence with stable filenames',
+        'README or notes explain how a peer can reproduce the lab externally',
       ],
+      hint:
+        hints?.build ??
+        'Keep a chronological evidence folder (01-design, 02-build, 03-verify) so artifacts stay auditable.',
     },
     {
       id: 'm3',
       title: labels?.verify ?? 'Verification & evidence',
       tasks: verifyTasks,
-      acceptanceCriteria: [
-        'Verification checklist completed',
-        'At least one failure/edge case documented with root cause notes',
-      ],
+      acceptanceCriteria: MEASURABLE_LAB_ACCEPTANCE.slice(2).concat([
+        'Each technical requirement marked pass/fail with a linked artifact name',
+      ]),
+      hint:
+        hints?.verify ??
+        'Retest after fixes and keep the failed attempt — examiners value the troubleshooting path.',
     },
   ]
 }
@@ -193,13 +230,199 @@ export function securityDeliverables(extras: Deliverable[] = []): Deliverable[] 
 }
 
 export function challenges(
-  items: Array<[string, string?]>,
+  items: Array<[string, string?, ChallengeSeverity?]>,
 ): TroubleshootingChallenge[] {
-  return items.map(([symptom, hint], i) => ({
+  return items.map(([symptom, hint, severity], i) => ({
     id: `t${i + 1}`,
     symptom,
     hint,
+    severity: severity ?? defaultSeverityForIndex(i),
   }))
+}
+
+export function defaultSeverityForIndex(index: number): ChallengeSeverity {
+  if (index === 0) return 'medium'
+  if (index === 1) return 'high'
+  if (index >= 2) return 'low'
+  return 'medium'
+}
+
+export function networkEvidenceRubric(): EvidenceRubricItem[] {
+  return [
+    {
+      id: 'er-topo',
+      label: 'Topology / architecture diagram',
+      description: 'Labeled Draw.io or Packet Tracer topology export. Self-report alone does not count.',
+      accepts: ['diagram', 'screenshot'],
+      requiredForEvidence: true,
+    },
+    {
+      id: 'er-addr',
+      label: 'Addressing / config worksheet',
+      description: 'Filled Section E table or spreadsheet matching the live lab.',
+      accepts: ['file', 'screenshot'],
+      requiredForEvidence: true,
+    },
+    {
+      id: 'er-verify',
+      label: 'Verification screenshots / CLI',
+      description: 'Ping matrix, show commands, or Wireshark snippets proving pass and one fail case.',
+      accepts: ['screenshot', 'log', 'config'],
+      requiredForEvidence: true,
+    },
+    {
+      id: 'er-notes',
+      label: 'Personal study notes',
+      description: 'Optional reflections — useful, but counts as self-report unless paired with artifacts.',
+      accepts: ['self_report', 'file'],
+      requiredForEvidence: false,
+    },
+  ]
+}
+
+export function codeEvidenceRubric(): EvidenceRubricItem[] {
+  return [
+    {
+      id: 'er-src',
+      label: 'Source / project folder',
+      description: 'External VS Code/Git tree with README. Checkbox without files is self-report only.',
+      accepts: ['file'],
+      requiredForEvidence: true,
+    },
+    {
+      id: 'er-io',
+      label: 'Sample I/O or test transcript',
+      description: 'Terminal/log output showing expected results and one edge-case failure.',
+      accepts: ['log', 'screenshot', 'file'],
+      requiredForEvidence: true,
+    },
+    {
+      id: 'er-diagram',
+      label: 'Architecture / flow diagram',
+      description: 'Module or data-flow diagram for documentation (not a runtime).',
+      accepts: ['diagram', 'screenshot'],
+      requiredForEvidence: false,
+    },
+  ]
+}
+
+export function sqlEvidenceRubric(): EvidenceRubricItem[] {
+  return [
+    {
+      id: 'er-erd',
+      label: 'ER diagram + CREATE scripts',
+      description: 'Diagram plus scripts that recreate the schema in an external engine.',
+      accepts: ['diagram', 'file'],
+      requiredForEvidence: true,
+    },
+    {
+      id: 'er-queries',
+      label: 'Query workbook outputs',
+      description: 'Scripts with result screenshots or exported CSV proving correctness.',
+      accepts: ['file', 'screenshot', 'log'],
+      requiredForEvidence: true,
+    },
+    {
+      id: 'er-fail',
+      label: 'Failure / optimization note',
+      description: 'At least one broken query or EXPLAIN comparison documented.',
+      accepts: ['log', 'screenshot', 'file'],
+      requiredForEvidence: true,
+    },
+  ]
+}
+
+export function securityEvidenceRubric(): EvidenceRubricItem[] {
+  return [
+    {
+      id: 'er-scope',
+      label: 'Authorized lab scope statement',
+      description: 'Written scope limiting work to Juice Shop / disposable labs you own.',
+      accepts: ['file', 'self_report'],
+      requiredForEvidence: true,
+    },
+    {
+      id: 'er-findings',
+      label: 'Findings with redacted screenshots',
+      description: 'Localhost evidence only — never production targets.',
+      accepts: ['screenshot', 'log', 'file'],
+      requiredForEvidence: true,
+    },
+    {
+      id: 'er-defend',
+      label: 'Defensive retest pack',
+      description: 'Evidence that mitigations work (parameterized queries, least privilege, etc.).',
+      accepts: ['screenshot', 'log', 'file'],
+      requiredForEvidence: true,
+    },
+  ]
+}
+
+export function sysadminEvidenceRubric(): EvidenceRubricItem[] {
+  return [
+    {
+      id: 'er-topo',
+      label: 'Lab topology / role diagram',
+      description: 'Hosts, roles, and trust boundaries labeled.',
+      accepts: ['diagram', 'screenshot'],
+      requiredForEvidence: true,
+    },
+    {
+      id: 'er-config',
+      label: 'Config exports / MMC / CLI',
+      description: 'Screenshots or exported GPOs, DNS zones, user lists, etc.',
+      accepts: ['screenshot', 'config', 'log'],
+      requiredForEvidence: true,
+    },
+    {
+      id: 'er-verify',
+      label: 'Verification checklist evidence',
+      description: 'Pass/fail with artifact names; include one intentional failure path.',
+      accepts: ['screenshot', 'log', 'file'],
+      requiredForEvidence: true,
+    },
+  ]
+}
+
+export function evidenceRubricFor(project: Pick<ProjectDoc, 'certification'>): EvidenceRubricItem[] {
+  switch (project.certification) {
+    case 'Security+':
+      return securityEvidenceRubric()
+    case 'Python':
+      return codeEvidenceRubric()
+    case 'SQL / Database':
+      return sqlEvidenceRubric()
+    case 'System Administration':
+      return sysadminEvidenceRubric()
+    default:
+      return networkEvidenceRubric()
+  }
+}
+
+export function mermaidDiagram(
+  id: string,
+  title: string,
+  content: string,
+  caption?: string,
+): ArchitectureDiagram {
+  return { id, title, kind: 'mermaid', content: content.trim(), caption }
+}
+
+export function placeholderDiagram(
+  id: string,
+  title: string,
+  description: string,
+): ArchitectureDiagram {
+  return { id, title, kind: 'placeholder', content: description }
+}
+
+export function svgDiagram(
+  id: string,
+  title: string,
+  content: string,
+  caption?: string,
+): ArchitectureDiagram {
+  return { id, title, kind: 'svg', content: content.trim(), caption }
 }
 
 export function networkProject(
