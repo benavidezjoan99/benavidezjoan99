@@ -21,6 +21,11 @@ export async function POST(req: NextRequest, { params }: Params) {
     count: body.count,
     areaM2: body.areaM2 ?? null,
     suggestMaterials: body.suggestMaterials,
+    placeOnPlan: body.placeOnPlan,
+    planX: body.planX ?? null,
+    planY: body.planY ?? null,
+    planWFt: body.planWFt ?? null,
+    planHFt: body.planHFt ?? null,
   });
   if (!room) {
     return NextResponse.json({ error: "Proyecto no encontrado" }, { status: 404 });
