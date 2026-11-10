@@ -27,6 +27,27 @@ describe("inferFloorTextureFromCatalog", () => {
     ).toBe("wood");
   });
 
+  it("maps engineered hardwood to woodDark and epoxy/luxury tile", () => {
+    expect(
+      inferFloorTextureFromCatalog({
+        id: "madera-ingenieria",
+        name: "Piso madera ingeniería",
+      }),
+    ).toBe("woodDark");
+    expect(
+      inferFloorTextureFromCatalog({
+        id: "porcelanato-lujo",
+        name: "Porcelanato gran formato / lujo",
+      }),
+    ).toBe("tileLarge");
+    expect(
+      inferFloorTextureFromCatalog({
+        id: "piso-epoxico",
+        name: "Piso epóxico / garage",
+      }),
+    ).toBe("epoxy");
+  });
+
   it("maps carpet / alfombra to carpet", () => {
     expect(
       inferFloorTextureFromCatalog({

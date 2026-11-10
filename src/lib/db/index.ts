@@ -71,7 +71,11 @@ function ensureSchema(database: Database.Database) {
       plan_y REAL,
       plan_w_ft REAL,
       plan_h_ft REAL,
-      floor_catalog_item_id TEXT
+      floor_catalog_item_id TEXT,
+      wall_paint_catalog_item_id TEXT,
+      wall_color_id TEXT,
+      furniture_style TEXT DEFAULT 'moderno',
+      furniture_visible INTEGER DEFAULT 1
     );
 
     CREATE TABLE IF NOT EXISTS line_items (
@@ -120,6 +124,23 @@ function ensureSchema(database: Database.Database) {
   }
   if (!columnExists(database, "rooms", "floor_catalog_item_id")) {
     database.exec(`ALTER TABLE rooms ADD COLUMN floor_catalog_item_id TEXT`);
+  }
+  // Planta 2D — personalización (pintura, color, muebles)
+  if (!columnExists(database, "rooms", "wall_paint_catalog_item_id")) {
+    database.exec(`ALTER TABLE rooms ADD COLUMN wall_paint_catalog_item_id TEXT`);
+  }
+  if (!columnExists(database, "rooms", "wall_color_id")) {
+    database.exec(`ALTER TABLE rooms ADD COLUMN wall_color_id TEXT`);
+  }
+  if (!columnExists(database, "rooms", "furniture_style")) {
+    database.exec(
+      `ALTER TABLE rooms ADD COLUMN furniture_style TEXT DEFAULT 'moderno'`,
+    );
+  }
+  if (!columnExists(database, "rooms", "furniture_visible")) {
+    database.exec(
+      `ALTER TABLE rooms ADD COLUMN furniture_visible INTEGER DEFAULT 1`,
+    );
   }
 }
 

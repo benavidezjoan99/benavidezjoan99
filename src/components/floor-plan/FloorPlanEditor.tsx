@@ -5,9 +5,21 @@ import Link from "next/link";
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
+  FLOOR_BUDGET_TIERS,
+  FLOOR_BUDGET_TIER_LABELS_ES,
+  FURNITURE_STYLES,
+  FURNITURE_STYLE_LABELS_ES,
+  WALL_COLOR_SWATCHES,
   filterFloorFinishCatalog,
+  filterWallPaintCatalog,
+  floorSkuForPreset,
+  hasFurniturePack,
+  inferFloorTierFromSku,
+  normalizeFurnitureStyle,
   rectAreaFt2,
   rectAreaM2,
+  type FloorBudgetTier,
+  type FurnitureStyle,
 } from "@/domain/floor-plan";
 import { formatUsd } from "@/lib/money";
 import { t } from "@/lib/i18n";
@@ -66,11 +78,17 @@ export function FloorPlanEditor({ initial, catalog }: Props) {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [floorSku, setFloorSku] = useState("");
+  const [paintSku, setPaintSku] = useState("");
+  const [wallColorId, setWallColorId] = useState("");
   const [newRoomType, setNewRoomType] = useState<RoomType>("dormitorio");
   const [newRoomName, setNewRoomName] = useState("");
 
   const floorOptions = useMemo(
     () => filterFloorFinishCatalog(catalog),
+    [catalog],
+  );
+  const paintOptions = useMemo(
+    () => filterWallPaintCatalog(catalog),
     [catalog],
   );
 
@@ -90,6 +108,13 @@ export function FloorPlanEditor({ initial, catalog }: Props) {
   const selected = rooms.find((r) => r.id === selectedId) ?? null;
   const selectedPlan = selected ? asPlanRoom(selected) : null;
 
+  const activeFloorTier = selected
+    ? inferFloorTierFromSku(
+        selected.roomType,
+        floorSku || selected.floorCatalogItemId,
+      )
+    : null;
+
   const selectedFloorLine = useMemo(() => {
     if (!selected?.floorCatalogItemId) return null;
     return (
@@ -101,6 +126,17 @@ export function FloorPlanEditor({ initial, catalog }: Props) {
     );
   }, [lines, selected]);
 
+  const selectedPaintLine = useMemo(() => {
+    if (!selected?.wallPaintCatalogItemId) return null;
+    return (
+      lines.find(
+        (l) =>
+          l.roomId === selected.id &&
+          l.catalogItemId === selected.wallPaintCatalogItemId,
+      ) ?? null
+    );
+  }, [lines, selected]);
+
   async function refresh() {
     const res = await fetch(`/api/projects/${project.id}`);
     const data = await res.json();
@@ -108,6 +144,21 @@ export function FloorPlanEditor({ initial, catalog }: Props) {
     setRooms(data.rooms);
     setLines(data.lineItems);
     setTotals(data.totals);
+    startTransition(() => router.refresh());
+  }
+
+  function applyDetail(data: {
+    room?: Room;
+    totals?: ProjectTotals;
+    lineItems?: LineItem[];
+  }) {
+    if (data.totals) setTotals(data.totals);
+    if (data.lineItems) setLines(data.lineItems);
+    if (data.room) {
+      setRooms((prev) =>
+        prev.map((r) => (r.id === data.room!.id ? data.room! : r)),
+      );
+    }
     startTransition(() => router.refresh());
   }
 
@@ -131,6 +182,9 @@ export function FloorPlanEditor({ initial, catalog }: Props) {
     }
     setNewRoomName("");
     setSelectedId(data.room.id);
+    setFloorSku("");
+    setPaintSku("");
+    setWallColorId("");
     setMessage(t("plan.roomAdded"));
     await refresh();
   }
@@ -140,7 +194,6 @@ export function FloorPlanEditor({ initial, catalog }: Props) {
     next: { planX: number; planY: number; planWFt: number; planHFt: number },
   ) {
     setError(null);
-    // Optimistic UI
     setRooms((prev) =>
       prev.map((r) =>
         r.id === roomId
@@ -166,8 +219,8 @@ export function FloorPlanEditor({ initial, catalog }: Props) {
     await refresh();
   }
 
-  async function applyFloor() {
-    const sku = floorSku || selected?.floorCatalogItemId || "";
+  async function applyFloor(skuOverride?: string) {
+    const sku = skuOverride || floorSku || selected?.floorCatalogItemId || "";
     if (!selectedId || !sku) return;
     setError(null);
     setMessage(null);
@@ -186,15 +239,100 @@ export function FloorPlanEditor({ initial, catalog }: Props) {
     }
     setFloorSku(sku);
     setMessage(t("plan.floorApplied"));
-    if (data.totals) setTotals(data.totals);
-    if (data.lineItems) setLines(data.lineItems);
+    applyDetail(data);
+  }
+
+  async function applyFloorPreset(tier: FloorBudgetTier) {
+    if (!selected) return;
+    const sku = floorSkuForPreset(selected.roomType, tier);
+    setFloorSku(sku);
+    await applyFloor(sku);
+  }
+
+  async function applyPaint() {
+    const sku = paintSku || selected?.wallPaintCatalogItemId || "";
+    if (!selectedId || !sku) return;
+    setError(null);
+    setMessage(null);
+    const color =
+      wallColorId || selected?.wallColorId || undefined;
+    const res = await fetch(
+      `/api/projects/${project.id}/rooms/${selectedId}/paint`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          catalogItemId: sku,
+          wallColorId: color || null,
+        }),
+      },
+    );
+    const data = await res.json();
+    if (!res.ok) {
+      setError(data.error || "No se pudo aplicar la pintura");
+      return;
+    }
+    setPaintSku(sku);
+    if (data.room?.wallColorId) setWallColorId(data.room.wallColorId);
+    setMessage(t("plan.paintApplied"));
+    applyDetail(data);
+  }
+
+  async function patchRoomStyle(patch: {
+    wallColorId?: string | null;
+    furnitureStyle?: FurnitureStyle;
+    furnitureVisible?: boolean;
+  }) {
+    if (!selectedId) return;
+    setError(null);
+    const res = await fetch(
+      `/api/projects/${project.id}/rooms/${selectedId}`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(patch),
+      },
+    );
+    const data = await res.json();
+    if (!res.ok) {
+      setError(data.error || "No se pudo guardar el estilo");
+      return;
+    }
     if (data.room) {
       setRooms((prev) =>
         prev.map((r) => (r.id === data.room.id ? data.room : r)),
       );
+      if (patch.wallColorId !== undefined) {
+        setWallColorId(patch.wallColorId ?? "");
+      }
     }
-    startTransition(() => router.refresh());
   }
+
+  async function applyFurniturePack(style: FurnitureStyle) {
+    if (!selectedId) return;
+    setError(null);
+    setMessage(null);
+    const res = await fetch(
+      `/api/projects/${project.id}/rooms/${selectedId}/furniture`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ style }),
+      },
+    );
+    const data = await res.json();
+    if (!res.ok) {
+      setError(data.error || "No se pudo aplicar el pack");
+      return;
+    }
+    setMessage(
+      data.line ? t("plan.furnitureApplied") : t("plan.furnitureNoBudget"),
+    );
+    applyDetail(data);
+  }
+
+  const furnitureStyle = normalizeFurnitureStyle(selected?.furnitureStyle);
+  const furnitureVisible = selected?.furnitureVisible !== false;
 
   return (
     <div className="fade-in space-y-5">
@@ -233,12 +371,18 @@ export function FloorPlanEditor({ initial, catalog }: Props) {
         </p>
       )}
 
-      <div className="grid gap-5 lg:grid-cols-[1fr_300px]">
+      <div className="grid gap-5 lg:grid-cols-[1fr_320px]">
         <div className="space-y-3">
           <FloorPlanCanvas
             rooms={planRooms}
             selectedId={selectedId}
-            onSelect={setSelectedId}
+            onSelect={(id) => {
+              setSelectedId(id);
+              const room = rooms.find((r) => r.id === id);
+              setFloorSku(room?.floorCatalogItemId ?? "");
+              setPaintSku(room?.wallPaintCatalogItemId ?? "");
+              setWallColorId(room?.wallColorId ?? "");
+            }}
             onGeometryChange={onGeometryChange}
             catalogById={catalogById}
           />
@@ -286,7 +430,7 @@ export function FloorPlanEditor({ initial, catalog }: Props) {
           </form>
         </div>
 
-        <aside className="space-y-4 rounded-lg border border-[var(--line)] bg-white p-4">
+        <aside className="max-h-[calc(100vh-8rem)] space-y-4 overflow-y-auto rounded-lg border border-[var(--line)] bg-white p-4">
           <h2 className="font-semibold text-[var(--bg-deep)]">
             {t("plan.selectedTitle")}
           </h2>
@@ -324,6 +468,7 @@ export function FloorPlanEditor({ initial, catalog }: Props) {
                 </div>
               </dl>
 
+              {/* —— Piso —— */}
               <div className="border-t border-[var(--line)] pt-3">
                 <h3 className="mb-2 text-sm font-semibold">
                   {t("plan.floorFinish")}
@@ -331,6 +476,25 @@ export function FloorPlanEditor({ initial, catalog }: Props) {
                 <p className="mb-2 text-xs text-[var(--ink-muted)]">
                   {t("plan.floorHelp")}
                 </p>
+                <p className="mb-1.5 text-xs font-medium text-[var(--ink-muted)]">
+                  {t("plan.floorPresets")}
+                </p>
+                <div className="mb-2 flex flex-wrap gap-1.5">
+                  {FLOOR_BUDGET_TIERS.map((tier) => (
+                    <button
+                      key={tier}
+                      type="button"
+                      onClick={() => void applyFloorPreset(tier)}
+                      className={`rounded border px-2.5 py-1 text-xs font-medium ${
+                        activeFloorTier === tier
+                          ? "border-[var(--bg-deep)] bg-[var(--bg-deep)] text-white"
+                          : "border-[var(--line)] bg-[#f7f5f0] text-[var(--bg-deep)] hover:bg-[#efeae1]"
+                      }`}
+                    >
+                      {FLOOR_BUDGET_TIER_LABELS_ES[tier]}
+                    </button>
+                  ))}
+                </div>
                 <select
                   className="mb-2 w-full rounded border border-[var(--line)] px-2 py-1.5 text-sm"
                   value={floorSku || selected.floorCatalogItemId || ""}
@@ -357,15 +521,129 @@ export function FloorPlanEditor({ initial, catalog }: Props) {
                     {selectedFloorLine.unit} ·{" "}
                     {formatUsd(
                       selectedFloorLine.quantity * selectedFloorLine.unitPrice,
-                    )}{" "}
-                    ({selectedFloorLine.priceSource || "seed"}
-                    {selectedFloorLine.pricedAt
-                      ? ` · ${selectedFloorLine.pricedAt}`
-                      : ""}
-                    )
+                    )}
                   </p>
                 )}
               </div>
+
+              {/* —— Pintura —— */}
+              <div className="border-t border-[var(--line)] pt-3">
+                <h3 className="mb-2 text-sm font-semibold">
+                  {t("plan.wallPaint")}
+                </h3>
+                <p className="mb-2 text-xs text-[var(--ink-muted)]">
+                  {t("plan.wallPaintHelp")}
+                </p>
+                <select
+                  className="mb-2 w-full rounded border border-[var(--line)] px-2 py-1.5 text-sm"
+                  value={paintSku || selected.wallPaintCatalogItemId || ""}
+                  onChange={(e) => setPaintSku(e.target.value)}
+                >
+                  <option value="">{t("plan.pickPaint")}</option>
+                  {paintOptions.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.name} · {formatUsd(item.unitPriceUsd)}/{item.unit}
+                    </option>
+                  ))}
+                </select>
+                <p className="mb-1.5 text-xs font-medium text-[var(--ink-muted)]">
+                  {t("plan.wallColor")}
+                </p>
+                <div className="mb-2 flex flex-wrap gap-1.5">
+                  {WALL_COLOR_SWATCHES.map((sw) => {
+                    const active =
+                      (wallColorId || selected.wallColorId) === sw.id;
+                    return (
+                      <button
+                        key={sw.id}
+                        type="button"
+                        title={sw.labelEs}
+                        onClick={() => {
+                          setWallColorId(sw.id);
+                          void patchRoomStyle({ wallColorId: sw.id });
+                        }}
+                        className={`h-7 w-7 rounded-full border-2 ${
+                          active
+                            ? "border-[var(--bg-deep)]"
+                            : "border-white shadow-[0_0_0_1px_rgba(0,0,0,0.15)]"
+                        }`}
+                        style={{ backgroundColor: sw.fill }}
+                        aria-label={sw.labelEs}
+                      />
+                    );
+                  })}
+                </div>
+                <button
+                  type="button"
+                  disabled={!(paintSku || selected.wallPaintCatalogItemId)}
+                  onClick={() => void applyPaint()}
+                  className="w-full rounded-md bg-[var(--bg-deep)] px-3 py-2 text-sm font-medium text-white disabled:opacity-40"
+                >
+                  {t("plan.applyPaint")}
+                </button>
+                {selectedPaintLine && (
+                  <p className="mt-2 text-xs text-[var(--ink-muted)]">
+                    {t("plan.currentLine")}: {selectedPaintLine.quantity}{" "}
+                    {selectedPaintLine.unit} ·{" "}
+                    {formatUsd(
+                      selectedPaintLine.quantity * selectedPaintLine.unitPrice,
+                    )}
+                  </p>
+                )}
+              </div>
+
+              {/* —— Muebles —— */}
+              {hasFurniturePack(selected.roomType) && (
+                <div className="border-t border-[var(--line)] pt-3">
+                  <h3 className="mb-2 text-sm font-semibold">
+                    {t("plan.furniturePack")}
+                  </h3>
+                  <p className="mb-2 text-xs text-[var(--ink-muted)]">
+                    {t("plan.furnitureHelp")}
+                  </p>
+                  <p className="mb-1.5 text-xs font-medium text-[var(--ink-muted)]">
+                    {t("plan.furnitureStyle")}
+                  </p>
+                  <div className="mb-2 flex flex-wrap gap-1.5">
+                    {FURNITURE_STYLES.map((style) => (
+                      <button
+                        key={style}
+                        type="button"
+                        onClick={() => {
+                          void patchRoomStyle({ furnitureStyle: style });
+                        }}
+                        className={`rounded border px-2.5 py-1 text-xs font-medium ${
+                          furnitureStyle === style
+                            ? "border-[var(--bg-deep)] bg-[var(--bg-deep)] text-white"
+                            : "border-[var(--line)] bg-[#f7f5f0] text-[var(--bg-deep)] hover:bg-[#efeae1]"
+                        }`}
+                      >
+                        {FURNITURE_STYLE_LABELS_ES[style]}
+                      </button>
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      void patchRoomStyle({
+                        furnitureVisible: !furnitureVisible,
+                      })
+                    }
+                    className="mb-2 w-full rounded border border-[var(--line)] px-3 py-1.5 text-xs font-medium hover:bg-[#f7f5f0]"
+                  >
+                    {furnitureVisible
+                      ? t("plan.furnitureHide")
+                      : t("plan.furnitureShow")}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void applyFurniturePack(furnitureStyle)}
+                    className="w-full rounded-md bg-[var(--bg-deep)] px-3 py-2 text-sm font-medium text-white"
+                  >
+                    {t("plan.applyFurniture")}
+                  </button>
+                </div>
+              )}
             </>
           )}
 

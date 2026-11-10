@@ -14,24 +14,31 @@ function makeCanvas(w: number, h: number): HTMLCanvasElement {
   return c;
 }
 
-function woodPattern(): HTMLCanvasElement {
+function woodPattern(dark = false): HTMLCanvasElement {
   const c = makeCanvas(48, 28);
   const ctx = c.getContext("2d")!;
-  ctx.fillStyle = "#d4b896";
+  ctx.fillStyle = dark ? "#9a7350" : "#d4b896";
   ctx.fillRect(0, 0, 48, 28);
   const plankH = 7;
   for (let y = 0; y < 28; y += plankH) {
-    const shade = y % (plankH * 2) === 0 ? "#c9a87a" : "#dcc4a0";
+    const shade = dark
+      ? y % (plankH * 2) === 0
+        ? "#8a6444"
+        : "#a57c58"
+      : y % (plankH * 2) === 0
+        ? "#c9a87a"
+        : "#dcc4a0";
     ctx.fillStyle = shade;
     ctx.fillRect(0, y, 48, plankH - 1);
-    ctx.strokeStyle = "rgba(90, 60, 30, 0.22)";
+    ctx.strokeStyle = dark ? "rgba(50, 30, 15, 0.35)" : "rgba(90, 60, 30, 0.22)";
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(0, y + plankH - 0.5);
     ctx.lineTo(48, y + plankH - 0.5);
     ctx.stroke();
-    // grain dashes
-    ctx.strokeStyle = "rgba(120, 80, 40, 0.12)";
+    ctx.strokeStyle = dark
+      ? "rgba(40, 25, 10, 0.18)"
+      : "rgba(120, 80, 40, 0.12)";
     for (let x = 4 + (y % 8); x < 48; x += 14) {
       ctx.beginPath();
       ctx.moveTo(x, y + 2);
@@ -42,25 +49,27 @@ function woodPattern(): HTMLCanvasElement {
   return c;
 }
 
-function tilePattern(): HTMLCanvasElement {
-  const c = makeCanvas(28, 28);
+function tilePattern(large = false): HTMLCanvasElement {
+  const size = large ? 40 : 28;
+  const half = size / 2;
+  const c = makeCanvas(size, size);
   const ctx = c.getContext("2d")!;
-  ctx.fillStyle = "#cfc8bc";
-  ctx.fillRect(0, 0, 28, 28);
-  ctx.fillStyle = "#d8d2c6";
-  ctx.fillRect(1, 1, 12, 12);
-  ctx.fillRect(15, 15, 12, 12);
-  ctx.fillStyle = "#c4beb2";
-  ctx.fillRect(15, 1, 12, 12);
-  ctx.fillRect(1, 15, 12, 12);
+  ctx.fillStyle = large ? "#c8c2b6" : "#cfc8bc";
+  ctx.fillRect(0, 0, size, size);
+  ctx.fillStyle = large ? "#ddd7cb" : "#d8d2c6";
+  ctx.fillRect(1, 1, half - 2, half - 2);
+  ctx.fillRect(half + 1, half + 1, half - 2, half - 2);
+  ctx.fillStyle = large ? "#bdb6aa" : "#c4beb2";
+  ctx.fillRect(half + 1, 1, half - 2, half - 2);
+  ctx.fillRect(1, half + 1, half - 2, half - 2);
   ctx.strokeStyle = "rgba(80, 70, 55, 0.28)";
   ctx.lineWidth = 1;
-  ctx.strokeRect(0.5, 0.5, 27, 27);
+  ctx.strokeRect(0.5, 0.5, size - 1, size - 1);
   ctx.beginPath();
-  ctx.moveTo(14, 0);
-  ctx.lineTo(14, 28);
-  ctx.moveTo(0, 14);
-  ctx.lineTo(28, 14);
+  ctx.moveTo(half, 0);
+  ctx.lineTo(half, size);
+  ctx.moveTo(0, half);
+  ctx.lineTo(size, half);
   ctx.stroke();
   return c;
 }
@@ -94,6 +103,25 @@ function concretePattern(): HTMLCanvasElement {
   return c;
 }
 
+function epoxyPattern(): HTMLCanvasElement {
+  const c = makeCanvas(36, 36);
+  const ctx = c.getContext("2d")!;
+  ctx.fillStyle = "#b8c0c8";
+  ctx.fillRect(0, 0, 36, 36);
+  const grad = ctx.createLinearGradient(0, 0, 36, 36);
+  grad.addColorStop(0, "rgba(255,255,255,0.18)");
+  grad.addColorStop(1, "rgba(40,60,80,0.12)");
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, 36, 36);
+  for (let i = 0; i < 40; i++) {
+    const x = (i * 11) % 36;
+    const y = (i * 17) % 36;
+    ctx.fillStyle = "rgba(255,255,255,0.1)";
+    ctx.fillRect(x, y, 3, 1);
+  }
+  return c;
+}
+
 function neutralPattern(): HTMLCanvasElement {
   const c = makeCanvas(24, 24);
   const ctx = c.getContext("2d")!;
@@ -109,16 +137,25 @@ export function getFloorPattern(kind: FloorTextureKind): HTMLCanvasElement {
   if (cached) return cached;
   switch (kind) {
     case "wood":
-      cached = woodPattern();
+      cached = woodPattern(false);
+      break;
+    case "woodDark":
+      cached = woodPattern(true);
       break;
     case "tile":
-      cached = tilePattern();
+      cached = tilePattern(false);
+      break;
+    case "tileLarge":
+      cached = tilePattern(true);
       break;
     case "carpet":
       cached = carpetPattern();
       break;
     case "concrete":
       cached = concretePattern();
+      break;
+    case "epoxy":
+      cached = epoxyPattern();
       break;
     default:
       cached = neutralPattern();
@@ -129,8 +166,11 @@ export function getFloorPattern(kind: FloorTextureKind): HTMLCanvasElement {
 
 export const TEXTURE_LEGEND_ES: Record<FloorTextureKind, string> = {
   wood: "Madera / laminado",
+  woodDark: "Madera ingeniería",
   tile: "Cerámica / porcelanato",
+  tileLarge: "Porcelanato gran formato",
   carpet: "Alfombra",
   concrete: "Concreto / exterior",
+  epoxy: "Epóxico / garage",
   neutral: "Neutro",
 };

@@ -15,8 +15,10 @@ import {
   PLAN_PX_PER_FT,
   PLAN_SNAP_FT,
   ftToPx,
+  normalizeFurnitureStyle,
   pxToFt,
   resolveFloorTexture,
+  resolveWallColor,
   snapFt,
   type FloorTextureKind,
 } from "@/domain/floor-plan";
@@ -96,9 +98,12 @@ export function FloorPlanCanvas({
   useEffect(() => {
     const kinds: FloorTextureKind[] = [
       "wood",
+      "woodDark",
       "tile",
+      "tileLarge",
       "carpet",
       "concrete",
+      "epoxy",
       "neutral",
     ];
     for (const k of kinds) {
@@ -243,9 +248,27 @@ export function FloorPlanCanvas({
           {rooms.map((room) => {
             const g = geomFor(room);
             const selected = room.id === selectedId;
-            const colors =
+            const paintHint = room.wallPaintCatalogItemId
+              ? catalogById[room.wallPaintCatalogItemId]
+              : null;
+            const wall = resolveWallColor({
+              wallColorId: room.wallColorId,
+              catalogItem: paintHint ?? {
+                id: room.wallPaintCatalogItemId,
+              },
+            });
+            const fallback =
               ROOM_PLAN_COLORS[room.roomType as RoomType] ??
               ROOM_PLAN_COLORS.otro;
+            const fill =
+              room.wallColorId || room.wallPaintCatalogItemId
+                ? wall.fill
+                : fallback.fill;
+            const stroke = selected
+              ? "#1c3d34"
+              : room.wallColorId || room.wallPaintCatalogItemId
+                ? wall.stroke
+                : WALL;
             return (
               <Rect
                 key={room.id}
@@ -256,8 +279,8 @@ export function FloorPlanCanvas({
                 y={g.y}
                 width={g.w}
                 height={g.h}
-                fill={colors.fill}
-                stroke={selected ? "#1c3d34" : WALL}
+                fill={fill}
+                stroke={stroke}
                 strokeWidth={selected ? 4 : 3.25}
                 shadowColor="rgba(20,18,14,0.35)"
                 shadowBlur={selected ? 10 : 6}
@@ -418,11 +441,14 @@ export function FloorPlanCanvas({
                     "rgba(30,25,20,0)",
                   ]}
                 />
-                <FurnitureSprites
-                  roomType={room.roomType as RoomType}
-                  widthPx={g.w}
-                  heightPx={g.h}
-                />
+                {room.furnitureVisible !== false && (
+                  <FurnitureSprites
+                    roomType={room.roomType as RoomType}
+                    widthPx={g.w}
+                    heightPx={g.h}
+                    style={normalizeFurnitureStyle(room.furnitureStyle)}
+                  />
+                )}
                 <Text
                   x={6}
                   y={g.h / 2 - 16}
@@ -446,7 +472,7 @@ export function FloorPlanCanvas({
       <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[var(--line)] bg-[#f7f4ee] px-3 py-1.5 text-xs text-[var(--ink-muted)]">
         <p>
           Escala {PLAN_PX_PER_FT} px/ft · arrastra para mover · tiradores para
-          redimensionar · texturas según piso de catálogo
+          redimensionar · personaliza piso, pintura y muebles
         </p>
         {usedTextures.length > 0 && (
           <p className="text-[11px]">

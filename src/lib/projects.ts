@@ -3,12 +3,18 @@ import { computeProjectTotals } from "@/domain/engines/estimation-engine";
 import { buildRoomQuantityLines } from "@/domain/engines/quantity-takeoff-engine";
 import { resolvePrice } from "@/domain/engines/pricing-engine";
 import {
+  cabinetSkuForPack,
   flooringQuantityFromPlan,
   isAreaFloorFinish,
+  isInteriorWallPaint,
   nextPlanPlacement,
+  normalizeFurnitureStyle,
   normalizePlanRect,
   planRectFromAreaM2,
   rectAreaM2,
+  wallColorIdFromCatalog,
+  wallPaintQuantityFromPlan,
+  type FurnitureStyle,
   type PlanRect,
 } from "@/domain/floor-plan";
 import {
@@ -230,6 +236,10 @@ export function addRoom(projectId: string, input: AddRoomInput): Room | null {
     planWFt: plan?.planWFt ?? null,
     planHFt: plan?.planHFt ?? null,
     floorCatalogItemId: null,
+    wallPaintCatalogItemId: null,
+    wallColorId: null,
+    furnitureStyle: "moderno",
+    furnitureVisible: true,
   };
 
   db.insert(rooms).values(room).run();
@@ -315,6 +325,9 @@ export type UpdateRoomInput = Partial<{
   planY: number | null;
   planWFt: number | null;
   planHFt: number | null;
+  wallColorId: string | null;
+  furnitureStyle: FurnitureStyle;
+  furnitureVisible: boolean;
 }>;
 
 export function updateRoom(
@@ -370,6 +383,16 @@ export function updateRoom(
     planY,
     planWFt,
     planHFt,
+    wallColorId:
+      input.wallColorId !== undefined ? input.wallColorId : room.wallColorId,
+    furnitureStyle:
+      input.furnitureStyle !== undefined
+        ? normalizeFurnitureStyle(input.furnitureStyle)
+        : (room.furnitureStyle ?? "moderno"),
+    furnitureVisible:
+      input.furnitureVisible !== undefined
+        ? input.furnitureVisible
+        : (room.furnitureVisible ?? true),
   };
   db.update(rooms).set(updated).where(eq(rooms.id, roomId)).run();
 
@@ -381,6 +404,15 @@ export function updateRoom(
     (input.planWFt !== undefined || input.planHFt !== undefined)
   ) {
     syncFloorLineQuantity(projectId, updated);
+  }
+
+  if (
+    updated.wallPaintCatalogItemId &&
+    updated.planWFt != null &&
+    updated.planHFt != null &&
+    (input.planWFt !== undefined || input.planHFt !== undefined)
+  ) {
+    syncPaintLineQuantity(projectId, updated);
   }
 
   db.update(projects)
@@ -594,6 +626,331 @@ export function applyRoomFloorFinish(
     ...room,
     floorCatalogItemId: item.id,
     areaM2: qty.areaM2,
+  };
+  db.update(rooms).set(updatedRoom).where(eq(rooms.id, roomId)).run();
+  db.update(projects)
+    .set({ updatedAt: nowIso() })
+    .where(eq(projects.id, projectId))
+    .run();
+
+  return { room: updatedRoom, line };
+}
+
+function syncPaintLineQuantity(projectId: string, room: Room) {
+  if (
+    !room.wallPaintCatalogItemId ||
+    room.planWFt == null ||
+    room.planHFt == null
+  ) {
+    return;
+  }
+  const db = getDb();
+  const catalog = getCatalog();
+  const item = catalog.find((c) => c.id === room.wallPaintCatalogItemId);
+  if (!item || !isInteriorWallPaint(item)) return;
+
+  const qty = wallPaintQuantityFromPlan({
+    planWFt: room.planWFt,
+    planHFt: room.planHFt,
+    unit: item.unit,
+  });
+  const line = db
+    .select()
+    .from(lineItems)
+    .where(
+      and(
+        eq(lineItems.projectId, projectId),
+        eq(lineItems.roomId, room.id),
+        eq(lineItems.catalogItemId, item.id),
+      ),
+    )
+    .get();
+  if (!line) return;
+  db.update(lineItems)
+    .set({ quantity: qty.quantity, unit: item.unit })
+    .where(eq(lineItems.id, line.id))
+    .run();
+}
+
+/**
+ * Aplica o cambia la pintura de pared de un ambiente desde la planta 2D.
+ * Cantidad = perímetro × altura × capas / cobertura (con desperdicio).
+ */
+export function applyRoomWallPaint(
+  projectId: string,
+  roomId: string,
+  catalogItemId: string,
+  wallColorId?: string | null,
+): { room: Room; line: LineItem } | null {
+  const db = getDb();
+  const room = db.select().from(rooms).where(eq(rooms.id, roomId)).get();
+  if (!room || room.projectId !== projectId) return null;
+
+  if (room.planWFt == null || room.planHFt == null) {
+    throw new Error(
+      "El ambiente no tiene geometría en la planta. Redimensiona el rectángulo primero.",
+    );
+  }
+
+  const catalog = getCatalog();
+  const item = catalog.find((c) => c.id === catalogItemId);
+  if (!item) {
+    throw new Error("Material de catálogo no encontrado.");
+  }
+  if (!isInteriorWallPaint(item)) {
+    throw new Error(
+      "Este material no es pintura de pared interior (usa galones o cubetas de pintura).",
+    );
+  }
+
+  const qty = wallPaintQuantityFromPlan({
+    planWFt: room.planWFt,
+    planHFt: room.planHFt,
+    unit: item.unit,
+  });
+  const { catalogMeta, prices } = catalogPriceRows(catalog);
+  const resolved = resolvePrice({
+    catalogItemId: item.id,
+    catalog: catalogMeta,
+    prices,
+  });
+  const pricedAt = resolved?.pricedAt ?? item.pricedAt ?? todayDate();
+  const unitPrice = resolved?.unitPriceUsd ?? item.unitPriceUsd;
+  const priceSource = resolved?.source ?? item.priceSource ?? "seed";
+  const colorId =
+    wallColorId?.trim() || wallColorIdFromCatalog(item) || "blanco";
+
+  const previousSku = room.wallPaintCatalogItemId;
+  let line: LineItem | undefined;
+
+  if (previousSku && previousSku === item.id) {
+    line = db
+      .select()
+      .from(lineItems)
+      .where(
+        and(
+          eq(lineItems.projectId, projectId),
+          eq(lineItems.roomId, roomId),
+          eq(lineItems.catalogItemId, item.id),
+        ),
+      )
+      .get();
+  } else if (previousSku) {
+    const oldLine = db
+      .select()
+      .from(lineItems)
+      .where(
+        and(
+          eq(lineItems.projectId, projectId),
+          eq(lineItems.roomId, roomId),
+          eq(lineItems.catalogItemId, previousSku),
+        ),
+      )
+      .get();
+    if (oldLine) {
+      const updatedLine: LineItem = {
+        ...oldLine,
+        catalogItemId: item.id,
+        description: item.name,
+        category: item.category,
+        unit: item.unit,
+        quantity: qty.quantity,
+        unitPrice,
+        priceSource,
+        pricedAt,
+      };
+      db.update(lineItems)
+        .set(updatedLine)
+        .where(eq(lineItems.id, oldLine.id))
+        .run();
+      line = updatedLine;
+    }
+  }
+
+  if (!line) {
+    line = db
+      .select()
+      .from(lineItems)
+      .where(
+        and(
+          eq(lineItems.projectId, projectId),
+          eq(lineItems.roomId, roomId),
+          eq(lineItems.catalogItemId, item.id),
+        ),
+      )
+      .get();
+  }
+
+  if (line && line.catalogItemId === item.id) {
+    const updatedLine: LineItem = {
+      ...line,
+      description: item.name,
+      category: item.category,
+      unit: item.unit,
+      quantity: qty.quantity,
+      unitPrice,
+      priceSource,
+      pricedAt,
+    };
+    db.update(lineItems)
+      .set(updatedLine)
+      .where(eq(lineItems.id, line.id))
+      .run();
+    line = updatedLine;
+  } else {
+    const existing = db
+      .select()
+      .from(lineItems)
+      .where(eq(lineItems.projectId, projectId))
+      .all();
+    line = {
+      id: newId(),
+      projectId,
+      roomId,
+      catalogItemId: item.id,
+      description: item.name,
+      category: item.category,
+      unit: item.unit,
+      quantity: qty.quantity,
+      unitPrice,
+      sortOrder: existing.length,
+      priceSource,
+      pricedAt,
+    };
+    db.insert(lineItems).values(line).run();
+  }
+
+  const updatedRoom: Room = {
+    ...room,
+    wallPaintCatalogItemId: item.id,
+    wallColorId: colorId,
+  };
+  db.update(rooms).set(updatedRoom).where(eq(rooms.id, roomId)).run();
+  db.update(projects)
+    .set({ updatedAt: nowIso() })
+    .where(eq(projects.id, projectId))
+    .run();
+
+  return { room: updatedRoom, line };
+}
+
+/**
+ * Aplica gabinete / vanity / closet del pack de muebles al presupuesto.
+ * Cantidad fija por ambiente (1 juego o pies lineales estimados del ancho).
+ */
+export function applyRoomFurniturePack(
+  projectId: string,
+  roomId: string,
+  style?: FurnitureStyle,
+): { room: Room; line: LineItem | null } | null {
+  const db = getDb();
+  const room = db.select().from(rooms).where(eq(rooms.id, roomId)).get();
+  if (!room || room.projectId !== projectId) return null;
+
+  const nextStyle = normalizeFurnitureStyle(
+    style ?? room.furnitureStyle ?? "moderno",
+  );
+  const sku = cabinetSkuForPack(room.roomType, nextStyle);
+  if (!sku) {
+    const updatedRoom: Room = {
+      ...room,
+      furnitureStyle: nextStyle,
+      furnitureVisible: true,
+    };
+    db.update(rooms).set(updatedRoom).where(eq(rooms.id, roomId)).run();
+    return { room: updatedRoom, line: null };
+  }
+
+  const catalog = getCatalog();
+  const item = catalog.find((c) => c.id === sku);
+  if (!item) {
+    throw new Error("Material de pack no encontrado en el catálogo.");
+  }
+
+  let quantity = 1;
+  if (item.unit.includes("lineal") || item.unit === "ft") {
+    const width = room.planWFt ?? 10;
+    quantity = Math.max(4, Math.round(width * 0.85));
+  }
+
+  const { catalogMeta, prices } = catalogPriceRows(catalog);
+  const resolved = resolvePrice({
+    catalogItemId: item.id,
+    catalog: catalogMeta,
+    prices,
+  });
+  const pricedAt = resolved?.pricedAt ?? item.pricedAt ?? todayDate();
+  const unitPrice = resolved?.unitPriceUsd ?? item.unitPriceUsd;
+  const priceSource = resolved?.source ?? item.priceSource ?? "seed";
+
+  // Reemplazar líneas previas de gabinete/vanity/closet del mismo ambiente.
+  const packSkus = [
+    "gabinetes-cocina",
+    "gabinetes-cocina-basico",
+    "vanity-bano",
+    "vanity-bano-basico",
+    "closet-rods",
+    "closet-sistema",
+  ];
+  const existingLines = db
+    .select()
+    .from(lineItems)
+    .where(and(eq(lineItems.projectId, projectId), eq(lineItems.roomId, roomId)))
+    .all();
+  let line: LineItem | undefined;
+  for (const old of existingLines) {
+    if (old.catalogItemId && packSkus.includes(old.catalogItemId)) {
+      if (old.catalogItemId === item.id) {
+        line = old;
+      } else {
+        db.delete(lineItems).where(eq(lineItems.id, old.id)).run();
+      }
+    }
+  }
+
+  if (line) {
+    const updatedLine: LineItem = {
+      ...line,
+      description: item.name,
+      category: item.category,
+      unit: item.unit,
+      quantity,
+      unitPrice,
+      priceSource,
+      pricedAt,
+    };
+    db.update(lineItems)
+      .set(updatedLine)
+      .where(eq(lineItems.id, line.id))
+      .run();
+    line = updatedLine;
+  } else {
+    const all = db
+      .select()
+      .from(lineItems)
+      .where(eq(lineItems.projectId, projectId))
+      .all();
+    line = {
+      id: newId(),
+      projectId,
+      roomId,
+      catalogItemId: item.id,
+      description: item.name,
+      category: item.category,
+      unit: item.unit,
+      quantity,
+      unitPrice,
+      sortOrder: all.length,
+      priceSource,
+      pricedAt,
+    };
+    db.insert(lineItems).values(line).run();
+  }
+
+  const updatedRoom: Room = {
+    ...room,
+    furnitureStyle: nextStyle,
+    furnitureVisible: true,
   };
   db.update(rooms).set(updatedRoom).where(eq(rooms.id, roomId)).run();
   db.update(projects)

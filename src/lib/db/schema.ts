@@ -48,6 +48,16 @@ export const rooms = sqliteTable("rooms", {
   planHFt: real("plan_h_ft"),
   /** SKU de acabado de piso aplicado desde la planta. */
   floorCatalogItemId: text("floor_catalog_item_id"),
+  /** SKU de pintura de pared aplicada desde la planta. */
+  wallPaintCatalogItemId: text("wall_paint_catalog_item_id"),
+  /** Id de swatch de color de pared (blanco, beige, gris, …). */
+  wallColorId: text("wall_color_id"),
+  /** Pack de muebles: basico | moderno. */
+  furnitureStyle: text("furniture_style").default("moderno"),
+  /** Mostrar sprites de muebles en el croquis. */
+  furnitureVisible: integer("furniture_visible", { mode: "boolean" }).default(
+    true,
+  ),
 });
 
 export const lineItems = sqliteTable("line_items", {

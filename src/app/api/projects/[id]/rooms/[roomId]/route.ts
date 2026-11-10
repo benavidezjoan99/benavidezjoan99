@@ -18,6 +18,9 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     planY: body.planY,
     planWFt: body.planWFt,
     planHFt: body.planHFt,
+    wallColorId: body.wallColorId,
+    furnitureStyle: body.furnitureStyle,
+    furnitureVisible: body.furnitureVisible,
   });
   if (!room) {
     return NextResponse.json({ error: "Ambiente no encontrado" }, { status: 404 });
