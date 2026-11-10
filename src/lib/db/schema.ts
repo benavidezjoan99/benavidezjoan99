@@ -39,6 +39,15 @@ export const rooms = sqliteTable("rooms", {
   count: integer("count").notNull().default(1),
   areaM2: real("area_m2"),
   sortOrder: integer("sort_order").notNull().default(0),
+  /** Croquis 2D: origen X en pies (esquina superior-izquierda). */
+  planX: real("plan_x"),
+  planY: real("plan_y"),
+  /** Ancho del rectángulo en pies. */
+  planWFt: real("plan_w_ft"),
+  /** Fondo / profundidad del rectángulo en pies. */
+  planHFt: real("plan_h_ft"),
+  /** SKU de acabado de piso aplicado desde la planta. */
+  floorCatalogItemId: text("floor_catalog_item_id"),
 });
 
 export const lineItems = sqliteTable("line_items", {

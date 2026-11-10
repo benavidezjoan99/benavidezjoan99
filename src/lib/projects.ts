@@ -1,7 +1,16 @@
-import { asc, eq } from "drizzle-orm";
+import { and, asc, eq } from "drizzle-orm";
 import { computeProjectTotals } from "@/domain/engines/estimation-engine";
 import { buildRoomQuantityLines } from "@/domain/engines/quantity-takeoff-engine";
 import { resolvePrice } from "@/domain/engines/pricing-engine";
+import {
+  flooringQuantityFromPlan,
+  isAreaFloorFinish,
+  nextPlanPlacement,
+  normalizePlanRect,
+  planRectFromAreaM2,
+  rectAreaM2,
+  type PlanRect,
+} from "@/domain/floor-plan";
 import {
   catalogToCsv,
   type CsvCatalogRow,
@@ -158,6 +167,12 @@ export type AddRoomInput = {
   count?: number;
   areaM2?: number | null;
   suggestMaterials?: boolean;
+  /** Si true, coloca el ambiente en el croquis 2D. */
+  placeOnPlan?: boolean;
+  planX?: number | null;
+  planY?: number | null;
+  planWFt?: number | null;
+  planHFt?: number | null;
 };
 
 export function addRoom(projectId: string, input: AddRoomInput): Room | null {
@@ -169,14 +184,52 @@ export function addRoom(projectId: string, input: AddRoomInput): Room | null {
   const roomId = newId();
   const count = input.count && input.count > 0 ? input.count : 1;
 
+  let plan: PlanRect | null = null;
+  if (
+    input.planWFt != null &&
+    input.planHFt != null &&
+    input.planX != null &&
+    input.planY != null
+  ) {
+    plan = normalizePlanRect({
+      planX: input.planX,
+      planY: input.planY,
+      planWFt: input.planWFt,
+      planHFt: input.planHFt,
+    });
+  } else if (input.placeOnPlan) {
+    const existingPlans: PlanRect[] = existingRooms
+      .filter((r) => r.planWFt != null && r.planHFt != null)
+      .map((r) =>
+        normalizePlanRect({
+          planX: r.planX ?? 0,
+          planY: r.planY ?? 0,
+          planWFt: r.planWFt!,
+          planHFt: r.planHFt!,
+        }),
+      );
+    const sized =
+      input.areaM2 != null && input.areaM2 > 0
+        ? planRectFromAreaM2(input.areaM2)
+        : { planWFt: 12, planHFt: 10 };
+    plan = nextPlanPlacement(existingPlans, sized.planWFt, sized.planHFt);
+  }
+
+  const areaFromPlan = plan ? rectAreaM2(plan.planWFt, plan.planHFt) : null;
+
   const room: Room = {
     id: roomId,
     projectId,
     name: input.name.trim(),
     roomType: input.roomType,
     count,
-    areaM2: input.areaM2 ?? null,
+    areaM2: areaFromPlan ?? input.areaM2 ?? null,
     sortOrder: existingRooms.length,
+    planX: plan?.planX ?? null,
+    planY: plan?.planY ?? null,
+    planWFt: plan?.planWFt ?? null,
+    planHFt: plan?.planHFt ?? null,
+    floorCatalogItemId: null,
   };
 
   db.insert(rooms).values(room).run();
@@ -253,28 +306,332 @@ export function addRoom(projectId: string, input: AddRoomInput): Room | null {
   return room;
 }
 
+export type UpdateRoomInput = Partial<{
+  name: string;
+  count: number;
+  areaM2: number | null;
+  roomType: RoomType;
+  planX: number | null;
+  planY: number | null;
+  planWFt: number | null;
+  planHFt: number | null;
+}>;
+
 export function updateRoom(
   projectId: string,
   roomId: string,
-  input: Partial<{ name: string; count: number; areaM2: number | null; roomType: RoomType }>,
+  input: UpdateRoomInput,
 ): Room | null {
   const db = getDb();
   const room = db.select().from(rooms).where(eq(rooms.id, roomId)).get();
   if (!room || room.projectId !== projectId) return null;
 
+  const hasPlanPatch =
+    input.planX !== undefined ||
+    input.planY !== undefined ||
+    input.planWFt !== undefined ||
+    input.planHFt !== undefined;
+
+  let planX = input.planX !== undefined ? input.planX : room.planX;
+  let planY = input.planY !== undefined ? input.planY : room.planY;
+  let planWFt = input.planWFt !== undefined ? input.planWFt : room.planWFt;
+  let planHFt = input.planHFt !== undefined ? input.planHFt : room.planHFt;
+  let areaM2 = input.areaM2 !== undefined ? input.areaM2 : room.areaM2;
+
+  if (
+    hasPlanPatch &&
+    planX != null &&
+    planY != null &&
+    planWFt != null &&
+    planHFt != null
+  ) {
+    const normalized = normalizePlanRect({ planX, planY, planWFt, planHFt });
+    planX = normalized.planX;
+    planY = normalized.planY;
+    planWFt = normalized.planWFt;
+    planHFt = normalized.planHFt;
+    // Geometría de planta manda sobre area_m2 cuando se edita el croquis.
+    if (
+      input.planWFt !== undefined ||
+      input.planHFt !== undefined ||
+      input.areaM2 === undefined
+    ) {
+      areaM2 = rectAreaM2(planWFt, planHFt);
+    }
+  }
+
   const updated: Room = {
     ...room,
     name: input.name?.trim() ?? room.name,
     count: input.count ?? room.count,
-    areaM2: input.areaM2 !== undefined ? input.areaM2 : room.areaM2,
+    areaM2,
     roomType: input.roomType ?? room.roomType,
+    planX,
+    planY,
+    planWFt,
+    planHFt,
   };
   db.update(rooms).set(updated).where(eq(rooms.id, roomId)).run();
+
+  // Si hay piso aplicado y cambió el tamaño, recalcular cantidad.
+  if (
+    updated.floorCatalogItemId &&
+    updated.planWFt != null &&
+    updated.planHFt != null &&
+    (input.planWFt !== undefined || input.planHFt !== undefined)
+  ) {
+    syncFloorLineQuantity(projectId, updated);
+  }
+
   db.update(projects)
     .set({ updatedAt: nowIso() })
     .where(eq(projects.id, projectId))
     .run();
   return updated;
+}
+
+function catalogPriceRows(catalog: CatalogItem[]) {
+  const pricedAt = todayDate();
+  return {
+    catalogMeta: catalog.map((c) => ({
+      id: c.id,
+      name: c.name,
+      category: c.category,
+      unit: c.unit,
+      unitPriceUsd: c.unitPriceUsd,
+      isEstimate: c.isEstimate,
+    })),
+    prices: catalog.map((c) => ({
+      catalogItemId: c.id,
+      unitPriceUsd: c.unitPriceUsd,
+      source: (c.priceSource as "seed" | "manual" | "csv") || "seed",
+      pricedAt: c.pricedAt || pricedAt,
+      isEstimate: c.isEstimate,
+    })),
+  };
+}
+
+function syncFloorLineQuantity(projectId: string, room: Room) {
+  if (
+    !room.floorCatalogItemId ||
+    room.planWFt == null ||
+    room.planHFt == null
+  ) {
+    return;
+  }
+  const db = getDb();
+  const catalog = getCatalog();
+  const item = catalog.find((c) => c.id === room.floorCatalogItemId);
+  if (!item || !isAreaFloorFinish(item)) return;
+
+  const qty = flooringQuantityFromPlan({
+    planWFt: room.planWFt,
+    planHFt: room.planHFt,
+    unit: item.unit,
+  });
+
+  const line = db
+    .select()
+    .from(lineItems)
+    .where(
+      and(
+        eq(lineItems.projectId, projectId),
+        eq(lineItems.roomId, room.id),
+        eq(lineItems.catalogItemId, item.id),
+      ),
+    )
+    .get();
+
+  if (line) {
+    db.update(lineItems)
+      .set({ quantity: qty.quantity })
+      .where(eq(lineItems.id, line.id))
+      .run();
+  }
+}
+
+/**
+ * Aplica o cambia el acabado de piso de un ambiente desde la planta 2D.
+ * Crea/actualiza la línea de material con qty = área × desperdicio y precio del catálogo.
+ */
+export function applyRoomFloorFinish(
+  projectId: string,
+  roomId: string,
+  catalogItemId: string,
+): { room: Room; line: LineItem } | null {
+  const db = getDb();
+  const room = db.select().from(rooms).where(eq(rooms.id, roomId)).get();
+  if (!room || room.projectId !== projectId) return null;
+
+  if (room.planWFt == null || room.planHFt == null) {
+    throw new Error(
+      "El ambiente no tiene geometría en la planta. Redimensiona el rectángulo primero.",
+    );
+  }
+
+  const catalog = getCatalog();
+  const item = catalog.find((c) => c.id === catalogItemId);
+  if (!item) {
+    throw new Error("Material de catálogo no encontrado.");
+  }
+  if (!isAreaFloorFinish(item)) {
+    throw new Error(
+      "Este material no se cotiza por área de piso (usa acabados en ft² / m²).",
+    );
+  }
+
+  const qty = flooringQuantityFromPlan({
+    planWFt: room.planWFt,
+    planHFt: room.planHFt,
+    unit: item.unit,
+  });
+  const { catalogMeta, prices } = catalogPriceRows(catalog);
+  const resolved = resolvePrice({
+    catalogItemId: item.id,
+    catalog: catalogMeta,
+    prices,
+  });
+  const pricedAt = resolved?.pricedAt ?? item.pricedAt ?? todayDate();
+  const unitPrice = resolved?.unitPriceUsd ?? item.unitPriceUsd;
+  const priceSource = resolved?.source ?? item.priceSource ?? "seed";
+
+  const previousSku = room.floorCatalogItemId;
+  let line: LineItem | undefined;
+
+  if (previousSku && previousSku === item.id) {
+    line = db
+      .select()
+      .from(lineItems)
+      .where(
+        and(
+          eq(lineItems.projectId, projectId),
+          eq(lineItems.roomId, roomId),
+          eq(lineItems.catalogItemId, item.id),
+        ),
+      )
+      .get();
+  } else if (previousSku) {
+    // Reemplazar línea del piso anterior si existe.
+    const oldLine = db
+      .select()
+      .from(lineItems)
+      .where(
+        and(
+          eq(lineItems.projectId, projectId),
+          eq(lineItems.roomId, roomId),
+          eq(lineItems.catalogItemId, previousSku),
+        ),
+      )
+      .get();
+    if (oldLine) {
+      const updatedLine: LineItem = {
+        ...oldLine,
+        catalogItemId: item.id,
+        description: item.name,
+        category: item.category,
+        unit: item.unit,
+        quantity: qty.quantity,
+        unitPrice,
+        priceSource,
+        pricedAt,
+      };
+      db.update(lineItems).set(updatedLine).where(eq(lineItems.id, oldLine.id)).run();
+      line = updatedLine;
+    }
+  }
+
+  if (!line) {
+    line = db
+      .select()
+      .from(lineItems)
+      .where(
+        and(
+          eq(lineItems.projectId, projectId),
+          eq(lineItems.roomId, roomId),
+          eq(lineItems.catalogItemId, item.id),
+        ),
+      )
+      .get();
+  }
+
+  if (line && line.catalogItemId === item.id) {
+    const updatedLine: LineItem = {
+      ...line,
+      description: item.name,
+      category: item.category,
+      unit: item.unit,
+      quantity: qty.quantity,
+      unitPrice,
+      priceSource,
+      pricedAt,
+    };
+    db.update(lineItems).set(updatedLine).where(eq(lineItems.id, line.id)).run();
+    line = updatedLine;
+  } else {
+    const existing = db
+      .select()
+      .from(lineItems)
+      .where(eq(lineItems.projectId, projectId))
+      .all();
+    line = {
+      id: newId(),
+      projectId,
+      roomId,
+      catalogItemId: item.id,
+      description: item.name,
+      category: item.category,
+      unit: item.unit,
+      quantity: qty.quantity,
+      unitPrice,
+      sortOrder: existing.length,
+      priceSource,
+      pricedAt,
+    };
+    db.insert(lineItems).values(line).run();
+  }
+
+  const updatedRoom: Room = {
+    ...room,
+    floorCatalogItemId: item.id,
+    areaM2: qty.areaM2,
+  };
+  db.update(rooms).set(updatedRoom).where(eq(rooms.id, roomId)).run();
+  db.update(projects)
+    .set({ updatedAt: nowIso() })
+    .where(eq(projects.id, projectId))
+    .run();
+
+  return { room: updatedRoom, line };
+}
+
+/**
+ * Asegura geometría de planta para ambientes que solo tienen área (editor lista).
+ */
+export function ensureRoomPlanGeometry(projectId: string, roomId: string): Room | null {
+  const db = getDb();
+  const room = db.select().from(rooms).where(eq(rooms.id, roomId)).get();
+  if (!room || room.projectId !== projectId) return null;
+  if (room.planWFt != null && room.planHFt != null && room.planX != null && room.planY != null) {
+    return room;
+  }
+
+  const siblings = db.select().from(rooms).where(eq(rooms.projectId, projectId)).all();
+  const existingPlans: PlanRect[] = siblings
+    .filter((r) => r.id !== roomId && r.planWFt != null && r.planHFt != null)
+    .map((r) =>
+      normalizePlanRect({
+        planX: r.planX ?? 0,
+        planY: r.planY ?? 0,
+        planWFt: r.planWFt!,
+        planHFt: r.planHFt!,
+      }),
+    );
+  const sized =
+    room.areaM2 != null && room.areaM2 > 0
+      ? planRectFromAreaM2(room.areaM2)
+      : { planWFt: 12, planHFt: 10 };
+  const plan = nextPlanPlacement(existingPlans, sized.planWFt, sized.planHFt);
+  return updateRoom(projectId, roomId, plan);
 }
 
 export function deleteRoom(projectId: string, roomId: string): boolean {

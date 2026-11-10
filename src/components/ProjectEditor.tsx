@@ -228,6 +228,12 @@ export function ProjectEditor({ initial, catalog }: Props) {
         </div>
         <div className="flex flex-wrap gap-2">
           <a
+            href={`/proyectos/${project.id}/planta`}
+            className="rounded-md border border-[var(--line)] bg-[var(--bg-deep)] px-4 py-2 text-sm font-medium text-white hover:opacity-95"
+          >
+            {t("editor.openPlan")}
+          </a>
+          <a
             href={`/api/projects/${project.id}/export`}
             className="rounded-md border border-[var(--line)] bg-white px-4 py-2 text-sm font-medium hover:bg-[var(--surface)]"
           >

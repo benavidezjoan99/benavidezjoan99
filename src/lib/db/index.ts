@@ -66,7 +66,12 @@ function ensureSchema(database: Database.Database) {
       room_type TEXT NOT NULL,
       count INTEGER NOT NULL DEFAULT 1,
       area_m2 REAL,
-      sort_order INTEGER NOT NULL DEFAULT 0
+      sort_order INTEGER NOT NULL DEFAULT 0,
+      plan_x REAL,
+      plan_y REAL,
+      plan_w_ft REAL,
+      plan_h_ft REAL,
+      floor_catalog_item_id TEXT
     );
 
     CREATE TABLE IF NOT EXISTS line_items (
@@ -99,6 +104,22 @@ function ensureSchema(database: Database.Database) {
   }
   if (!columnExists(database, "line_items", "priced_at")) {
     database.exec(`ALTER TABLE line_items ADD COLUMN priced_at TEXT`);
+  }
+  // Planta 2D — geometría del croquis + piso aplicado
+  if (!columnExists(database, "rooms", "plan_x")) {
+    database.exec(`ALTER TABLE rooms ADD COLUMN plan_x REAL`);
+  }
+  if (!columnExists(database, "rooms", "plan_y")) {
+    database.exec(`ALTER TABLE rooms ADD COLUMN plan_y REAL`);
+  }
+  if (!columnExists(database, "rooms", "plan_w_ft")) {
+    database.exec(`ALTER TABLE rooms ADD COLUMN plan_w_ft REAL`);
+  }
+  if (!columnExists(database, "rooms", "plan_h_ft")) {
+    database.exec(`ALTER TABLE rooms ADD COLUMN plan_h_ft REAL`);
+  }
+  if (!columnExists(database, "rooms", "floor_catalog_item_id")) {
+    database.exec(`ALTER TABLE rooms ADD COLUMN floor_catalog_item_id TEXT`);
   }
 }
 

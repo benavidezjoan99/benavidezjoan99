@@ -14,6 +14,10 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     count: body.count,
     areaM2: body.areaM2,
     roomType: body.roomType as RoomType | undefined,
+    planX: body.planX,
+    planY: body.planY,
+    planWFt: body.planWFt,
+    planHFt: body.planHFt,
   });
   if (!room) {
     return NextResponse.json({ error: "Ambiente no encontrado" }, { status: 404 });

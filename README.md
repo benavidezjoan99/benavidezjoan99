@@ -43,12 +43,13 @@ npm run catalog:import -- path/to/catalog.csv --apply    # valida + importa (sou
 
 - Branding **ObraCalc PR**
 - CRUD proyectos + ambientes + líneas de materiales
+- **Planta 2D** (`/proyectos/[id]/planta`): croquis de ambientes (mover/redimensionar) y acabado de piso del catálogo → líneas del presupuesto
 - Takeoff dimensional cuando el ambiente tiene m²
 - Motores puros: QuantityTakeoff, Pricing, Labor, Estimation
 - Catálogo filtrable + import/export CSV con validación
 - Persistencia **SQLite** local
 - i18n mínimo `es-PR`
-- Tests Vitest
+- Tests Vitest (engines + geometría de planta → cantidad)
 
 ## Rutas principales
 
@@ -58,6 +59,7 @@ npm run catalog:import -- path/to/catalog.csv --apply    # valida + importa (sou
 | `/catalogo` | Catálogo filtrable (categoría + búsqueda) + CSV |
 | `/proyectos/nuevo` | Alta de proyecto (construir) |
 | `/proyectos/[id]` | Edición: datos, ambientes, materiales, totales |
+| `/proyectos/[id]/planta` | Croquis 2D (Konva): ambientes + piso de catálogo → presupuesto |
 | `/api/catalog` | GET JSON; `?format=csv` export; POST import; `?validate=1` dry-run |
 
 ## Stack
