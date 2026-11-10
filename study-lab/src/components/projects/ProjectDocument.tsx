@@ -29,7 +29,8 @@ export function ProjectDocument({ project }: { project: ProjectDoc }) {
         <div className="rounded-md border border-warning/40 bg-[#2a2112] px-3 py-2 text-sm text-warning">
           Documentation only. Recommended external tools:{' '}
           <strong>{project.requiredSoftware.join(', ')}</strong>. This app does not simulate networks,
-          run Packet Tracer/GNS3, or provision cloud resources.
+          run Python/SQL, embed Juice Shop, or provision cloud resources — complete hands-on work
+          only in the listed external tools (authorized/disposable labs for security practice).
         </div>
         <div className="flex flex-wrap gap-4 text-sm">
           <span>Self-reported completion: {summary.selfReported}/{summary.total}</span>
