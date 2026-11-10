@@ -73,25 +73,37 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => ({
   filteredProjects: () => {
     const { projects, filters } = get()
     const q = filters.query.trim().toLowerCase()
-    return projects.filter((p) => {
-      if (q) {
-        const hay = [
-          p.title,
-          p.overview,
-          p.category,
-          ...p.technologies,
-          ...p.requiredSoftware,
-        ].join(' ').toLowerCase()
-        if (!hay.includes(q)) return false
-      }
-      if (filters.certification !== 'all' && p.certification !== filters.certification) return false
-      if (filters.difficulty !== 'all' && p.difficulty !== filters.difficulty) return false
-      if (filters.technology !== 'all' && !p.technologies.includes(filters.technology)) return false
-      if (filters.requiredSoftware !== 'all' && !p.requiredSoftware.includes(filters.requiredSoftware)) return false
-      if (filters.maxHours != null && p.estimatedHours > filters.maxHours) return false
-      if (filters.careerTrack !== 'all' && !p.careerTracks.includes(filters.careerTrack)) return false
-      return true
-    })
+    return projects
+      .filter((p) => {
+        if (q) {
+          const hay = [
+            p.title,
+            p.overview,
+            p.category,
+            ...p.technologies,
+            ...p.requiredSoftware,
+            ...p.certObjectives,
+            ...p.examDomains,
+            ...(p.curriculumOrder != null ? [String(p.curriculumOrder), `#${p.curriculumOrder}`] : []),
+          ]
+            .join(' ')
+            .toLowerCase()
+          if (!hay.includes(q)) return false
+        }
+        if (filters.certification !== 'all' && p.certification !== filters.certification) return false
+        if (filters.difficulty !== 'all' && p.difficulty !== filters.difficulty) return false
+        if (filters.technology !== 'all' && !p.technologies.includes(filters.technology)) return false
+        if (
+          filters.requiredSoftware !== 'all' &&
+          !p.requiredSoftware.includes(filters.requiredSoftware)
+        )
+          return false
+        if (filters.maxHours != null && p.estimatedHours > filters.maxHours) return false
+        if (filters.careerTrack !== 'all' && !p.careerTracks.includes(filters.careerTrack)) return false
+        return true
+      })
+      .slice()
+      .sort((a, b) => (a.curriculumOrder ?? 999) - (b.curriculumOrder ?? 999))
   },
 
   getProgress: (projectId) => {

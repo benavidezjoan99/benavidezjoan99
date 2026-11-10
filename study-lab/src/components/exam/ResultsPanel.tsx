@@ -1,3 +1,4 @@
+import { WeakDomainRecommendations } from '@/components/projects/WeakDomainRecommendations'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { getAnswer, hasAnswer, useExamStore } from '@/store/exam-store'
@@ -91,6 +92,8 @@ export function ResultsPanel() {
           </CardContent>
         </Card>
       )}
+
+      <WeakDomainRecommendations title="Practice projects for weak domains" />
     </div>
   )
 }

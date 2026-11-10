@@ -8,6 +8,7 @@ import {
   YAxis,
 } from 'recharts'
 import { TrackSwitcher } from '@/components/exam/TrackSwitcher'
+import { WeakDomainRecommendations } from '@/components/projects/WeakDomainRecommendations'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useExamStore } from '@/store/exam-store'
 
@@ -91,6 +92,8 @@ export function AnalyticsPage() {
           )}
         </CardContent>
       </Card>
+
+      <WeakDomainRecommendations title="Projects for weak domains" />
     </div>
   )
 }
