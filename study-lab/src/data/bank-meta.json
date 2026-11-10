@@ -1,0 +1,31 @@
+{
+  "network": {
+    "core": 100,
+    "extra": 447,
+    "challenge": 139,
+    "topics": [
+      "Networking Fundamentals & Cloud",
+      "IPv4 Addressing & Subnetting",
+      "Switching & VLANs",
+      "Routing & NAT",
+      "Network Services & Operations",
+      "Ports & Protocols",
+      "Network Security",
+      "IPv6 & Modern Networks",
+      "Wireless & Physical Infrastructure",
+      "Network Troubleshooting"
+    ]
+  },
+  "security": {
+    "core": 100,
+    "extra": 240,
+    "challenge": 124,
+    "topics": [
+      "General Security Concepts",
+      "Threats, Vulnerabilities & Mitigations",
+      "Security Architecture",
+      "Security Operations",
+      "Security Program Management"
+    ]
+  }
+}

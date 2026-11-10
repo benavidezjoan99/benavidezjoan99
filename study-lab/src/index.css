@@ -1,0 +1,53 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Source Sans 3", "Segoe UI", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "IBM Plex Sans", "Source Sans 3", ui-sans-serif, system-ui, sans-serif;
+  --color-background: #07111f;
+  --color-foreground: #e8f1ff;
+  --color-card: #101c2e;
+  --color-card-foreground: #e8f1ff;
+  --color-muted: #152438;
+  --color-muted-foreground: #9db0c9;
+  --color-border: #2a3f5a;
+  --color-primary: #3d8bfd;
+  --color-primary-foreground: #f5f9ff;
+  --color-accent: #1a9f75;
+  --color-accent-foreground: #e8fff6;
+  --color-destructive: #e35d6a;
+  --color-warning: #e6b35c;
+  --color-ring: #3d8bfd;
+  --radius-lg: 0.85rem;
+  --radius-md: 0.55rem;
+  --radius-sm: 0.35rem;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    color-scheme: dark;
+  }
+
+  body {
+    @apply m-0 min-h-screen bg-background font-sans text-foreground antialiased;
+    background-image:
+      radial-gradient(ellipse 80% 50% at 10% -10%, rgba(45, 110, 180, 0.35), transparent 55%),
+      radial-gradient(ellipse 60% 40% at 90% 0%, rgba(26, 159, 117, 0.18), transparent 50%),
+      linear-gradient(180deg, #0a1526 0%, #07111f 40%, #081018 100%);
+    background-attachment: fixed;
+  }
+
+  #root {
+    min-height: 100vh;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    letter-spacing: -0.02em;
+  }
+}
