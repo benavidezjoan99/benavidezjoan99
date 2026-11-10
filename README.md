@@ -67,3 +67,17 @@ npm run catalog:import -- path/to/catalog.csv --apply    # valida + importa (sou
 - Providers de precio: `src/providers/pricing/*` (Manual + CSV + validate)
 - SQLite vía `better-sqlite3` + Drizzle ORM → `data/obracalc.sqlite`
 - Vitest
+
+---
+
+## IT Study Lab Pro (`study-lab/`)
+
+Separate Vite + React app for CompTIA exam prep and a documentation-first Project Library. Does **not** replace ObraCalc.
+
+```bash
+cd study-lab
+npm install
+npm run dev
+```
+
+See [`study-lab/README.md`](study-lab/README.md) for stack and scope.
