@@ -1,0 +1,8 @@
+{
+  "items": [
+    {
+      "EAN": { "EANCOD": "0000000000011", "EANMODE": "N1", "EANTALL": "S", "EANCOL": "9", "EANCANT": "3" },
+      "Modelo": { "MODDESC": "Artículo anidado demo", "MODMODE": "N1" }
+    }
+  ]
+}

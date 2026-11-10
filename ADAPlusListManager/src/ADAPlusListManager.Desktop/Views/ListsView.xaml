@@ -1,0 +1,34 @@
+<UserControl x:Class="ADAPlusListManager.Desktop.Views.ListsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Loaded="OnLoaded">
+  <DockPanel>
+    <StackPanel DockPanel.Dock="Top">
+      <TextBlock Text="Listados" Style="{StaticResource PageTitle}" />
+      <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+        <Button Content="Recargar" Style="{StaticResource PrimaryButton}" Command="{Binding ReloadCommand}" />
+        <ComboBox Width="280" ItemsSource="{Binding Lists}" SelectedItem="{Binding SelectedList}" DisplayMemberPath="Name" Margin="0,0,8,0" />
+        <TextBox Width="160" Margin="0,0,8,0" Text="{Binding Search, UpdateSourceTrigger=PropertyChanged}" ToolTip="Búsqueda" />
+        <TextBox Width="100" Margin="0,0,8,0" Text="{Binding FilterReference, UpdateSourceTrigger=PropertyChanged}" ToolTip="Referencia" />
+        <TextBox Width="80" Margin="0,0,8,0" Text="{Binding FilterSize, UpdateSourceTrigger=PropertyChanged}" ToolTip="Talla" />
+        <TextBox Width="80" Text="{Binding FilterColor, UpdateSourceTrigger=PropertyChanged}" ToolTip="Color" />
+      </StackPanel>
+      <TextBlock Text="{Binding TotalsText}" Margin="0,0,0,8" FontWeight="SemiBold" />
+      <TextBlock Text="Advertencia: hay cantidades desconocidas. No se inventan unidades."
+                 Foreground="{StaticResource WarningBrush}"
+                 Visibility="{Binding HasUnknownQuantities, Converter={StaticResource BoolToVis}}"
+                 Margin="0,0,0,8" />
+    </StackPanel>
+    <DataGrid ItemsSource="{Binding VisibleItems}" AutoGenerateColumns="False" IsReadOnly="True"
+              SelectionMode="Extended" HeadersVisibility="Column">
+      <DataGrid.Columns>
+        <DataGridTextColumn Header="Referencia" Binding="{Binding Reference}" Width="*" />
+        <DataGridTextColumn Header="Código" Binding="{Binding Barcode}" Width="*" />
+        <DataGridTextColumn Header="Descripción" Binding="{Binding Description}" Width="2*" />
+        <DataGridTextColumn Header="Talla" Binding="{Binding SizeCode}" Width="80" />
+        <DataGridTextColumn Header="Color" Binding="{Binding ColorCode}" Width="80" />
+        <DataGridTextColumn Header="Cantidad" Binding="{Binding Quantity}" Width="90" />
+      </DataGrid.Columns>
+    </DataGrid>
+  </DockPanel>
+</UserControl>

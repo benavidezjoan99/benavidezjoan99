@@ -1,0 +1,29 @@
+<UserControl x:Class="ADAPlusListManager.Desktop.Views.SettingsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Loaded="OnLoaded">
+  <ScrollViewer>
+    <StackPanel MaxWidth="640">
+      <TextBlock Text="Configuración" Style="{StaticResource PageTitle}" />
+      <TextBlock Text="Idioma" />
+      <TextBox Text="{Binding Language}" Margin="0,4,0,12" />
+      <TextBlock Text="Tema" />
+      <TextBox Text="{Binding Theme}" Margin="0,4,0,12" />
+      <TextBlock Text="Identificador de tienda" />
+      <TextBox Text="{Binding StoreIdentifier}" Margin="0,4,0,12" />
+      <TextBlock Text="Impresora predeterminada" />
+      <TextBox Text="{Binding DefaultPrinter}" Margin="0,4,0,12" />
+      <TextBlock Text="Formato de página" />
+      <TextBox Text="{Binding PageSize}" Margin="0,4,0,12" />
+      <TextBlock Text="Orientación" />
+      <TextBox Text="{Binding Orientation}" Margin="0,4,0,12" />
+      <TextBlock Text="Retención de temporales (horas)" />
+      <TextBox Text="{Binding RetentionHours}" Margin="0,4,0,12" />
+      <TextBlock Text="Carpeta de datos / temp" />
+      <TextBox Text="{Binding DataFolder}" Margin="0,4,0,12" IsReadOnly="True" />
+      <TextBlock Text="{Binding AdaStatus}" TextWrapping="Wrap" Margin="0,0,0,12" Foreground="{StaticResource MutedBrush}" />
+      <TextBlock Text="{Binding DotnetChoice}" TextWrapping="Wrap" Margin="0,0,0,12" />
+      <Button Content="Guardar" Style="{StaticResource PrimaryButton}" Command="{Binding SaveCommand}" HorizontalAlignment="Left" />
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

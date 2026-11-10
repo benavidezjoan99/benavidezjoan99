@@ -1,0 +1,50 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{5DD7522E-E651-4A13-B45B-930DC0614A6B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ADAPlusListManager.Core", "src\ADAPlusListManager.Core\ADAPlusListManager.Core.csproj", "{2200C954-420B-4B0B-8C6B-F6E00298BC45}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ADAPlusListManager.Infrastructure", "src\ADAPlusListManager.Infrastructure\ADAPlusListManager.Infrastructure.csproj", "{4FABBA0B-A925-4879-8FC4-D57A9F95A836}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{0DC1E875-6F2D-4E8C-B1A0-B07EFA71EE8B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ADAPlusListManager.Tests", "tests\ADAPlusListManager.Tests\ADAPlusListManager.Tests.csproj", "{51FBE404-B00F-4ADD-8DA7-5C708F2313C6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ADAPlusListManager.Desktop", "src\ADAPlusListManager.Desktop\ADAPlusListManager.Desktop.csproj", "{4852A551-FF12-47BF-82B7-FED86D733898}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{2200C954-420B-4B0B-8C6B-F6E00298BC45}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2200C954-420B-4B0B-8C6B-F6E00298BC45}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2200C954-420B-4B0B-8C6B-F6E00298BC45}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2200C954-420B-4B0B-8C6B-F6E00298BC45}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4FABBA0B-A925-4879-8FC4-D57A9F95A836}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4FABBA0B-A925-4879-8FC4-D57A9F95A836}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4FABBA0B-A925-4879-8FC4-D57A9F95A836}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4FABBA0B-A925-4879-8FC4-D57A9F95A836}.Release|Any CPU.Build.0 = Release|Any CPU
+		{51FBE404-B00F-4ADD-8DA7-5C708F2313C6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{51FBE404-B00F-4ADD-8DA7-5C708F2313C6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{51FBE404-B00F-4ADD-8DA7-5C708F2313C6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{51FBE404-B00F-4ADD-8DA7-5C708F2313C6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4852A551-FF12-47BF-82B7-FED86D733898}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4852A551-FF12-47BF-82B7-FED86D733898}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4852A551-FF12-47BF-82B7-FED86D733898}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4852A551-FF12-47BF-82B7-FED86D733898}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{2200C954-420B-4B0B-8C6B-F6E00298BC45} = {5DD7522E-E651-4A13-B45B-930DC0614A6B}
+		{4FABBA0B-A925-4879-8FC4-D57A9F95A836} = {5DD7522E-E651-4A13-B45B-930DC0614A6B}
+		{51FBE404-B00F-4ADD-8DA7-5C708F2313C6} = {0DC1E875-6F2D-4E8C-B1A0-B07EFA71EE8B}
+		{4852A551-FF12-47BF-82B7-FED86D733898} = {5DD7522E-E651-4A13-B45B-930DC0614A6B}
+	EndGlobalSection
+EndGlobal

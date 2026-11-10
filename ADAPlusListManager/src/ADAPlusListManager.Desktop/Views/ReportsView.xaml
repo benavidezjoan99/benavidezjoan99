@@ -1,0 +1,22 @@
+<UserControl x:Class="ADAPlusListManager.Desktop.Views.ReportsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Loaded="OnLoaded">
+  <StackPanel>
+    <TextBlock Text="Reportes" Style="{StaticResource PageTitle}" />
+    <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+      <Button Content="Recargar" Style="{StaticResource PrimaryButton}" Command="{Binding ReloadCommand}" />
+      <ComboBox Width="280" ItemsSource="{Binding Lists}" SelectedItem="{Binding SelectedList}" DisplayMemberPath="Name" Margin="0,0,8,0" />
+      <TextBox Width="140" Text="{Binding StoreId, UpdateSourceTrigger=PropertyChanged}" ToolTip="Id tienda" Margin="0,0,8,0" />
+      <ComboBox Width="200" ItemsSource="{Binding Printers}" SelectedItem="{Binding SelectedPrinter}" />
+    </StackPanel>
+    <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+      <Button Content="Vista previa" Style="{StaticResource PrimaryButton}" Command="{Binding PreviewCommand}" />
+      <Button Content="Imprimir" Style="{StaticResource PrimaryButton}" Command="{Binding PrintCommand}" />
+      <Button Content="Excel" Style="{StaticResource PrimaryButton}" Command="{Binding ExportExcelCommand}" />
+      <Button Content="CSV" Style="{StaticResource PrimaryButton}" Command="{Binding ExportCsvCommand}" />
+      <Button Content="PDF" Style="{StaticResource PrimaryButton}" Command="{Binding ExportPdfCommand}" />
+    </StackPanel>
+    <TextBlock Text="{Binding Message}" TextWrapping="Wrap" FontWeight="SemiBold" />
+  </StackPanel>
+</UserControl>
