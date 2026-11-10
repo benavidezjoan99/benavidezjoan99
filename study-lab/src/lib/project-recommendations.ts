@@ -16,18 +16,25 @@ function domainAccuracy(d: DomainMetric): number | null {
 }
 
 /**
- * Recommend Network+ projects from weak exam domains.
+ * Recommend projects from weak exam domains (Network+ or Security+).
  * Weak = answered domains with accuracy below `threshold`, or the lowest
  * accuracy domains when none fall under the threshold (still answered).
  * Never marks projects complete — recommendations are study guidance only.
  */
 export function recommendProjectsFromWeakDomains(
   domains: DomainMetric[],
-  options?: { threshold?: number; limitPerDomain?: number; maxDomains?: number },
+  options?: {
+    threshold?: number
+    limitPerDomain?: number
+    maxDomains?: number
+    /** Prefer projects for this certification when set (e.g. Security+). */
+    certification?: string
+  },
 ): WeakDomainRecommendation[] {
   const threshold = options?.threshold ?? 70
   const limitPerDomain = options?.limitPerDomain ?? 3
   const maxDomains = options?.maxDomains ?? 3
+  const certification = options?.certification
 
   const answered = domains.filter((d) => d.answered > 0)
   if (!answered.length) return []
@@ -47,11 +54,20 @@ export function recommendProjectsFromWeakDomains(
   weak.sort((a, b) => a.accuracy - b.accuracy)
 
   return weak.slice(0, maxDomains).map(({ domain, accuracy }) => {
+    // Include any project mapped to the domain (Security+ labs, sysadmin hardening, etc.).
+    // Same-certification projects sort first when `certification` is provided.
     const matches = SAMPLE_PROJECTS.filter((p) =>
       p.examDomains.some((label) => label === domain.label),
     )
       .slice()
-      .sort((a, b) => (a.curriculumOrder ?? 999) - (b.curriculumOrder ?? 999))
+      .sort((a, b) => {
+        if (certification) {
+          const aSame = a.certification === certification ? 0 : 1
+          const bSame = b.certification === certification ? 0 : 1
+          if (aSame !== bSame) return aSame - bSame
+        }
+        return (a.curriculumOrder ?? 999) - (b.curriculumOrder ?? 999)
+      })
       .slice(0, limitPerDomain)
 
     return {

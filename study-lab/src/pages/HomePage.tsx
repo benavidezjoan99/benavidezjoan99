@@ -4,16 +4,20 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { WeakDomainRecommendations } from '@/components/projects/WeakDomainRecommendations'
 import { BANK, CHALLENGE_BANK } from '@/data/banks'
-import { NETWORK_PLUS_PROJECTS } from '@/data/projects'
+import {
+  NETWORK_PLUS_PROJECTS,
+  PYTHON_PROJECTS,
+  SAMPLE_PROJECTS,
+  SECURITY_PLUS_PROJECTS,
+  SQL_PROJECTS,
+  SYSADMIN_PROJECTS,
+} from '@/data/projects'
 
 export function HomePage() {
   const networkCount =
     BANK.network.core.length + BANK.network.extra.length + CHALLENGE_BANK.network.length
   const securityCount =
     BANK.security.core.length + BANK.security.extra.length + CHALLENGE_BANK.security.length
-  const beginner = NETWORK_PLUS_PROJECTS.filter((p) => p.difficulty === 'beginner').length
-  const intermediate = NETWORK_PLUS_PROJECTS.filter((p) => p.difficulty === 'intermediate').length
-  const advanced = NETWORK_PLUS_PROJECTS.filter((p) => p.difficulty === 'advanced').length
 
   return (
     <div className="space-y-5">
@@ -21,13 +25,14 @@ export function HomePage() {
         <Card className="overflow-hidden">
           <CardContent className="relative space-y-5 p-8">
             <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(61,139,253,0.18),transparent_45%)]" />
-            <Badge className="relative">Phase 5 · Network+ curriculum</Badge>
+            <Badge className="relative">Phase 6 · Multi-track projects</Badge>
             <h2 className="relative font-display text-3xl font-bold md:text-4xl">
               Study smarter offline — document labs externally.
             </h2>
             <p className="relative max-w-xl text-muted-foreground">
-              CompTIA Network+ and Security+ exam engines plus a full {NETWORK_PLUS_PROJECTS.length}-project
-              Network+ library (A–J docs). Hands-on work stays in Packet Tracer, GNS3, and other pro tools.
+              CompTIA Network+ and Security+ exam engines plus a {SAMPLE_PROJECTS.length}-project
+              library (Network+, Security+, System Administration, Python, SQL). Hands-on work stays
+              in Packet Tracer, Proxmox, VS Code, PostgreSQL, Juice Shop, and other pro tools.
             </p>
             <div className="relative flex flex-wrap gap-3">
               <Button asChild>
@@ -53,32 +58,22 @@ export function HomePage() {
           </Card>
           <Card>
             <CardHeader>
-              <CardTitle>Network+ Project Library</CardTitle>
+              <CardTitle>Project Library tracks</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2 text-sm">
-              <p>
-                {NETWORK_PLUS_PROJECTS.length} projects · Beginner {beginner} · Intermediate {intermediate} ·
-                Advanced {advanced}
-              </p>
+              <p>Network+: {NETWORK_PLUS_PROJECTS.length}</p>
+              <p>Security+: {SECURITY_PLUS_PROJECTS.length}</p>
+              <p>System Administration: {SYSADMIN_PROJECTS.length}</p>
+              <p>Python: {PYTHON_PROJECTS.length}</p>
+              <p>SQL / Database: {SQL_PROJECTS.length}</p>
               <Link to="/projects" className="block text-primary hover:underline">
-                Open full progressive set (1–30)
+                Open full library ({SAMPLE_PROJECTS.length})
               </Link>
-              <div className="space-y-1 pt-1">
-                {NETWORK_PLUS_PROJECTS.slice(0, 3).map((p) => (
-                  <Link
-                    key={p.id}
-                    to={`/projects/${p.slug}`}
-                    className="block text-primary hover:underline"
-                  >
-                    #{p.curriculumOrder} {p.title}
-                  </Link>
-                ))}
-              </div>
             </CardContent>
           </Card>
         </div>
       </div>
-      <WeakDomainRecommendations title="Study next — weak Network+ domains" />
+      <WeakDomainRecommendations title="Study next — weak exam domains" />
     </div>
   )
 }

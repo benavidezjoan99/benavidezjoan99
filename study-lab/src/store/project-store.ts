@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { loadAllProjectProgress, saveProjectProgress } from '@/db'
 import { SAMPLE_PROJECTS } from '@/data/projects'
+import { compareProjects } from '@/data/projects/helpers'
 import type {
   ProjectDoc,
   ProjectFilters,
@@ -103,7 +104,7 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => ({
         return true
       })
       .slice()
-      .sort((a, b) => (a.curriculumOrder ?? 999) - (b.curriculumOrder ?? 999))
+      .sort(compareProjects)
   },
 
   getProgress: (projectId) => {

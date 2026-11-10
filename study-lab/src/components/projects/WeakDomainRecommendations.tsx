@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { TRACK_LABELS } from '@/data/banks'
 import { recommendProjectsFromWeakDomains } from '@/lib/project-recommendations'
 import { useExamStore } from '@/store/exam-store'
 
@@ -11,22 +12,10 @@ export function WeakDomainRecommendations({
 }) {
   const track = useExamStore((s) => s.store.active)
   const domains = useExamStore((s) => s.domains())
-  const recommendations =
-    track === 'network' ? recommendProjectsFromWeakDomains(domains) : []
-
-  if (track !== 'network') {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">{title}</CardTitle>
-        </CardHeader>
-        <CardContent className="text-sm text-muted-foreground">
-          Switch the exam track to Network+ and answer questions to unlock project recommendations
-          mapped to weak domains. Security+ project mapping arrives in a later phase.
-        </CardContent>
-      </Card>
-    )
-  }
+  const trackLabel = TRACK_LABELS[track]
+  const recommendations = recommendProjectsFromWeakDomains(domains, {
+    certification: trackLabel,
+  })
 
   if (!recommendations.length) {
     return (
@@ -35,8 +24,9 @@ export function WeakDomainRecommendations({
           <CardTitle className="text-base">{title}</CardTitle>
         </CardHeader>
         <CardContent className="text-sm text-muted-foreground">
-          Complete Network+ exam questions to surface weak domains. Recommendations never auto-complete
-          projects — attach evidence after you finish labs in Packet Tracer, GNS3, or other external tools.
+          Complete {trackLabel} exam questions to surface weak domains. Recommendations never
+          auto-complete projects — attach evidence after you finish labs in external tools (Packet
+          Tracer, Proxmox, VS Code, Juice Shop, PostgreSQL, etc.).
         </CardContent>
       </Card>
     )
@@ -49,7 +39,8 @@ export function WeakDomainRecommendations({
       </CardHeader>
       <CardContent className="space-y-4">
         <p className="text-xs text-muted-foreground">
-          Guidance only based on current session accuracy. Self-reported checkboxes are not proof of skill.
+          Guidance only based on current {trackLabel} session accuracy. Self-reported checkboxes are
+          not proof of skill.
         </p>
         {recommendations.map((rec) => (
           <div key={rec.domain} className="rounded-md border border-border p-3">
@@ -65,9 +56,12 @@ export function WeakDomainRecommendations({
                 {rec.projects.map((p) => (
                   <li key={p.id}>
                     <Link to={`/projects/${p.slug}`} className="text-primary hover:underline">
-                      #{p.curriculumOrder} {p.title}
+                      {p.certification} #{p.curriculumOrder} {p.title}
                     </Link>
-                    <span className="text-muted-foreground"> · {p.difficulty} · {p.estimatedHours}h</span>
+                    <span className="text-muted-foreground">
+                      {' '}
+                      · {p.difficulty} · {p.estimatedHours}h
+                    </span>
                   </li>
                 ))}
               </ul>
