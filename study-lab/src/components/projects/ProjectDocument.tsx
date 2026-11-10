@@ -18,6 +18,7 @@ export function ProjectDocument({ project }: { project: ProjectDoc }) {
     <div className="space-y-5">
       <header className="space-y-3">
         <div className="flex flex-wrap gap-2">
+          {project.curriculumOrder != null && <Badge>Project #{project.curriculumOrder}</Badge>}
           <Badge>{project.difficulty}</Badge>
           <Badge>{project.certification}</Badge>
           <Badge>{project.category}</Badge>
@@ -26,7 +27,9 @@ export function ProjectDocument({ project }: { project: ProjectDoc }) {
         <h2 className="font-display text-3xl font-bold">{project.title}</h2>
         <p className="max-w-3xl text-muted-foreground">{project.overview}</p>
         <div className="rounded-md border border-warning/40 bg-[#2a2112] px-3 py-2 text-sm text-warning">
-          Documentation only. Complete labs in: {project.requiredSoftware.join(', ')}. This app does not simulate networks or provision cloud resources.
+          Documentation only. Recommended external tools:{' '}
+          <strong>{project.requiredSoftware.join(', ')}</strong>. This app does not simulate networks,
+          run Packet Tracer/GNS3, or provision cloud resources.
         </div>
         <div className="flex flex-wrap gap-4 text-sm">
           <span>Self-reported completion: {summary.selfReported}/{summary.total}</span>
@@ -42,6 +45,8 @@ export function ProjectDocument({ project }: { project: ProjectDoc }) {
           <li>Technologies: {project.technologies.join(', ')}</li>
           <li>Outcomes: {project.outcomes.join('; ')}</li>
           <li>Cert objectives: {project.certObjectives.join(', ')}</li>
+          <li>Exam domains: {project.examDomains.join(', ')}</li>
+          <li>Career tracks: {project.careerTracks.join(', ')}</li>
         </ul>
       </Section>
 

@@ -29,7 +29,7 @@ export function ProjectFiltersBar() {
         <Label htmlFor="project-search">Search</Label>
         <Input
           id="project-search"
-          placeholder="Title, tech, software…"
+          placeholder="Title, tech, software, objective (N10-009), domain…"
           value={filters.query}
           onChange={(e) => setFilters({ query: e.target.value })}
         />

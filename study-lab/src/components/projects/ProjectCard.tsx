@@ -11,6 +11,7 @@ export function ProjectCard({ project }: { project: ProjectDoc }) {
     <Card className="transition hover:border-primary/60">
       <CardHeader>
         <div className="flex flex-wrap gap-2">
+          {project.curriculumOrder != null && <Badge>#{project.curriculumOrder}</Badge>}
           <Badge>{project.difficulty}</Badge>
           <Badge>{project.certification}</Badge>
           <Badge>{project.estimatedHours}h</Badge>
@@ -21,6 +22,11 @@ export function ProjectCard({ project }: { project: ProjectDoc }) {
           </Link>
         </CardTitle>
         <p className="text-sm text-muted-foreground">{project.category}</p>
+        {project.certObjectives.length > 0 && (
+          <p className="text-xs text-muted-foreground">
+            Objectives: {project.certObjectives.join(' · ')}
+          </p>
+        )}
       </CardHeader>
       <CardContent className="space-y-3 text-sm">
         <p className="text-muted-foreground line-clamp-3">{project.overview}</p>

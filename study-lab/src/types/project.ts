@@ -41,6 +41,8 @@ export interface ProjectDoc {
   id: string
   slug: string
   title: string
+  /** Progressive curriculum order within a certification track (1–30 for Network+). */
+  curriculumOrder?: number
   certification: string
   difficulty: ProjectDifficulty
   category: string
@@ -50,7 +52,10 @@ export interface ProjectDoc {
   priorKnowledge: string[]
   outcomes: string[]
   careerTracks: CareerTrack[]
+  /** CompTIA objective codes, e.g. N10-009 2.1 */
   certObjectives: string[]
+  /** Exam bank domain labels used for weak-domain project recommendations. */
+  examDomains: string[]
   overview: string
   businessScenario: string
   technicalRequirements: string[]
