@@ -43,7 +43,7 @@ npm run catalog:import -- path/to/catalog.csv --apply    # valida + importa (sou
 
 - Branding **ObraCalc PR**
 - CRUD proyectos + ambientes + líneas de materiales
-- **Planta 2D** (`/proyectos/[id]/planta`): croquis de ambientes (mover/redimensionar) y acabado de piso del catálogo → líneas del presupuesto
+- **Planta 2D** (`/proyectos/[id]/planta`): croquis estilo render (texturas de piso por material, muebles top-down, sombras suaves, etiquetas + medidas) y acabado de piso del catálogo → líneas del presupuesto. Refs de estilo: `docs/references/floor-plan-style/` en el Project store. **No es plano certificado.**
 - Takeoff dimensional cuando el ambiente tiene m²
 - Motores puros: QuantityTakeoff, Pricing, Labor, Estimation
 - Catálogo filtrable + import/export CSV con validación
@@ -59,7 +59,7 @@ npm run catalog:import -- path/to/catalog.csv --apply    # valida + importa (sou
 | `/catalogo` | Catálogo filtrable (categoría + búsqueda) + CSV |
 | `/proyectos/nuevo` | Alta de proyecto (construir) |
 | `/proyectos/[id]` | Edición: datos, ambientes, materiales, totales |
-| `/proyectos/[id]/planta` | Croquis 2D (Konva): ambientes + piso de catálogo → presupuesto |
+| `/proyectos/[id]/planta` | Planta 2D estilo render (Konva): texturas, muebles, etiquetas + piso → presupuesto |
 | `/api/catalog` | GET JSON; `?format=csv` export; POST import; `?validate=1` dry-run |
 
 ## Stack
