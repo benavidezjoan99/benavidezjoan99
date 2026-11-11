@@ -6,9 +6,12 @@ import type { RoomType } from "@/lib/types";
  */
 export type FloorTextureKind =
   | "wood"
+  | "woodDark"
   | "tile"
+  | "tileLarge"
   | "carpet"
   | "concrete"
+  | "epoxy"
   | "neutral";
 
 export type FloorTextureCatalogHint = {
@@ -16,14 +19,18 @@ export type FloorTextureCatalogHint = {
   name?: string | null;
 };
 
+const WOOD_DARK_RE =
+  /(madera[\s-]?ingenier|engineered|hardwood|roble[\s-]?oscuro|oak[\s-]?dark|parquet)/i;
 const WOOD_RE =
-  /(madera|laminat|parquet|engineered|hardwood|oak|roble|piso[\s-]?lamin|vinil[\s-]?madera|\bwood\b)/i;
+  /(madera|laminat|parquet|engineered|hardwood|oak|roble|piso[\s-]?lamin|vinil[\s-]?madera|\bwood\b|lvp|spc)/i;
+const TILE_LARGE_RE =
+  /(porcelanato[\s-]?lujo|porcelan[\w\s-]*24|large[\s-]?format|gran[\s-]?formato)/i;
 const TILE_RE =
   /(ceram|cerám|porcelan|\btile\b|azulejo|mosaico|baldosa|piso[\s-]?ceram)/i;
 const CARPET_RE =
   /(carpet|alfombra|moqueta|carpeting|tapiz[\s-]?piso)/i;
-const CONCRETE_RE =
-  /(concret|hormig|cemento|\bgarage\b|epoxy|epoxi)/i;
+const EPOXY_RE = /(epoxy|epoxi|piso[\s-]?epox)/i;
+const CONCRETE_RE = /(concret|hormig|cemento|\bgarage\b)/i;
 
 /** Inferencia desde SKU / nombre de catálogo. */
 export function inferFloorTextureFromCatalog(
@@ -32,7 +39,10 @@ export function inferFloorTextureFromCatalog(
   if (!item) return null;
   const haystack = `${item.id ?? ""} ${item.name ?? ""}`.trim();
   if (!haystack) return null;
+  if (EPOXY_RE.test(haystack)) return "epoxy";
+  if (WOOD_DARK_RE.test(haystack)) return "woodDark";
   if (WOOD_RE.test(haystack)) return "wood";
+  if (TILE_LARGE_RE.test(haystack)) return "tileLarge";
   if (TILE_RE.test(haystack)) return "tile";
   if (CARPET_RE.test(haystack)) return "carpet";
   if (CONCRETE_RE.test(haystack)) return "concrete";

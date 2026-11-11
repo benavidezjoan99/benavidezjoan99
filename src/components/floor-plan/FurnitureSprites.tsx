@@ -1,7 +1,11 @@
 "use client";
 
 import { Circle, Group, Line, Rect } from "react-konva";
-import { ftToPx } from "@/domain/floor-plan";
+import {
+  normalizeFurnitureStyle,
+  type FurnitureStyle,
+  ftToPx,
+} from "@/domain/floor-plan";
 import type { RoomType } from "@/lib/types";
 
 type Props = {
@@ -10,6 +14,8 @@ type Props = {
   widthPx: number;
   /** Alto del ambiente en px. */
   heightPx: number;
+  /** Pack visual: basico (menos piezas) | moderno (detalle). */
+  style?: FurnitureStyle | string | null;
 };
 
 const SHADOW = {
@@ -20,8 +26,16 @@ const SHADOW = {
   shadowOpacity: 0.55,
 };
 
+type PackProps = { pad: number; w: number; h: number; style: FurnitureStyle };
+
 /** Muebles top-down placeholders por tipo de ambiente (estilo render 2D). */
-export function FurnitureSprites({ roomType, widthPx, heightPx }: Props) {
+export function FurnitureSprites({
+  roomType,
+  widthPx,
+  heightPx,
+  style,
+}: Props) {
+  const pack = normalizeFurnitureStyle(style);
   // Márgenes internos para no pegar a muros
   const pad = Math.max(8, Math.min(widthPx, heightPx) * 0.08);
   const innerW = widthPx - pad * 2;
@@ -30,197 +44,180 @@ export function FurnitureSprites({ roomType, widthPx, heightPx }: Props) {
 
   switch (roomType) {
     case "sala":
-      return <LivingFurniture pad={pad} w={innerW} h={innerH} />;
+      return <LivingFurniture pad={pad} w={innerW} h={innerH} style={pack} />;
     case "cocina":
-      return <KitchenFurniture pad={pad} w={innerW} h={innerH} />;
+      return <KitchenFurniture pad={pad} w={innerW} h={innerH} style={pack} />;
     case "dormitorio":
-      return <BedroomFurniture pad={pad} w={innerW} h={innerH} />;
+      return <BedroomFurniture pad={pad} w={innerW} h={innerH} style={pack} />;
     case "comedor":
-      return <DiningFurniture pad={pad} w={innerW} h={innerH} />;
+      return <DiningFurniture pad={pad} w={innerW} h={innerH} style={pack} />;
     case "bano":
-      return <BathFurniture pad={pad} w={innerW} h={innerH} />;
+      return <BathFurniture pad={pad} w={innerW} h={innerH} style={pack} />;
     case "lavanderia":
-      return <LaundryFurniture pad={pad} w={innerW} h={innerH} />;
+      return <LaundryFurniture pad={pad} w={innerW} h={innerH} style={pack} />;
     default:
       return null;
   }
 }
 
-function LivingFurniture({
-  pad,
-  w,
-  h,
-}: {
-  pad: number;
-  w: number;
-  h: number;
-}) {
-  const sofaW = Math.min(w * 0.72, ftToPx(7.5));
+function LivingFurniture({ pad, w, h, style }: PackProps) {
+  const sofaW = Math.min(w * (style === "basico" ? 0.62 : 0.72), ftToPx(7.5));
   const sofaH = Math.min(h * 0.28, ftToPx(3));
   const tableW = Math.min(w * 0.35, ftToPx(4));
   const tableH = Math.min(h * 0.18, ftToPx(2));
+  const sofaFill = style === "basico" ? "#6a7a8a" : "#4a6fa5";
   return (
     <Group listening={false}>
-      {/* Sofá */}
       <Rect
         x={pad + (w - sofaW) / 2}
         y={pad + h - sofaH - 4}
         width={sofaW}
         height={sofaH}
-        fill="#4a6fa5"
-        cornerRadius={4}
+        fill={sofaFill}
+        cornerRadius={style === "basico" ? 2 : 4}
         {...SHADOW}
       />
-      <Rect
-        x={pad + (w - sofaW) / 2 + 6}
-        y={pad + h - sofaH + 4}
-        width={sofaW - 12}
-        height={sofaH * 0.35}
-        fill="#5d82b8"
-        cornerRadius={2}
-      />
-      {/* Mesa de centro */}
+      {style === "moderno" && (
+        <Rect
+          x={pad + (w - sofaW) / 2 + 6}
+          y={pad + h - sofaH + 4}
+          width={sofaW - 12}
+          height={sofaH * 0.35}
+          fill="#5d82b8"
+          cornerRadius={2}
+        />
+      )}
       <Rect
         x={pad + (w - tableW) / 2}
         y={pad + h * 0.38}
         width={tableW}
         height={tableH}
-        fill="#a67c52"
+        fill={style === "basico" ? "#b0a090" : "#a67c52"}
         cornerRadius={2}
         {...SHADOW}
       />
-      {/* Sillones */}
-      <Rect
-        x={pad + 4}
-        y={pad + h * 0.32}
-        width={ftToPx(2.2)}
-        height={ftToPx(2.4)}
-        fill="#4a6fa5"
-        cornerRadius={3}
-        {...SHADOW}
-      />
-      <Rect
-        x={pad + w - ftToPx(2.2) - 4}
-        y={pad + h * 0.32}
-        width={ftToPx(2.2)}
-        height={ftToPx(2.4)}
-        fill="#4a6fa5"
-        cornerRadius={3}
-        {...SHADOW}
-      />
+      {style === "moderno" && (
+        <>
+          <Rect
+            x={pad + 4}
+            y={pad + h * 0.32}
+            width={ftToPx(2.2)}
+            height={ftToPx(2.4)}
+            fill="#4a6fa5"
+            cornerRadius={3}
+            {...SHADOW}
+          />
+          <Rect
+            x={pad + w - ftToPx(2.2) - 4}
+            y={pad + h * 0.32}
+            width={ftToPx(2.2)}
+            height={ftToPx(2.4)}
+            fill="#4a6fa5"
+            cornerRadius={3}
+            {...SHADOW}
+          />
+        </>
+      )}
     </Group>
   );
 }
 
-function KitchenFurniture({
-  pad,
-  w,
-  h,
-}: {
-  pad: number;
-  w: number;
-  h: number;
-}) {
+function KitchenFurniture({ pad, w, h, style }: PackProps) {
   const cabDepth = Math.min(ftToPx(2), h * 0.18);
   const islandW = Math.min(w * 0.45, ftToPx(6));
   const islandH = Math.min(h * 0.28, ftToPx(3));
+  const cabFill = style === "basico" ? "#8a8074" : "#6b5a48";
   return (
     <Group listening={false}>
-      {/* Gabinetes perimetrales */}
       <Rect
         x={pad}
         y={pad}
         width={w}
         height={cabDepth}
-        fill="#6b5a48"
+        fill={cabFill}
         {...SHADOW}
       />
-      <Rect
-        x={pad}
-        y={pad}
-        width={cabDepth}
-        height={h * 0.55}
-        fill="#6b5a48"
-      />
-      {/* Encimera / top */}
+      {style === "moderno" && (
+        <Rect x={pad} y={pad} width={cabDepth} height={h * 0.55} fill={cabFill} />
+      )}
       <Rect
         x={pad + 2}
         y={pad + 2}
         width={w - 4}
         height={cabDepth - 4}
-        fill="#9a9a96"
+        fill={style === "basico" ? "#c4c0b8" : "#9a9a96"}
       />
-      {/* Isla */}
-      <Rect
-        x={pad + (w - islandW) / 2}
-        y={pad + h * 0.42}
-        width={islandW}
-        height={islandH}
-        fill="#8a8a86"
-        cornerRadius={2}
-        {...SHADOW}
-      />
-      <Rect
-        x={pad + (w - islandW) / 2 + 4}
-        y={pad + h * 0.42 + 4}
-        width={islandW - 8}
-        height={islandH - 8}
-        fill="#b0b0aa"
-        cornerRadius={1}
-      />
-      {/* Banquetas */}
-      {[0, 1, 2].map((i) => (
-        <Circle
-          key={i}
-          x={pad + (w - islandW) / 2 + islandW * ((i + 1) / 4)}
-          y={pad + h * 0.42 + islandH + ftToPx(1.1)}
-          radius={ftToPx(0.55)}
-          fill="#f2f0ea"
-          stroke="#c8c4ba"
-          strokeWidth={1}
-          {...SHADOW}
+      {style === "moderno" ? (
+        <>
+          <Rect
+            x={pad + (w - islandW) / 2}
+            y={pad + h * 0.42}
+            width={islandW}
+            height={islandH}
+            fill="#8a8a86"
+            cornerRadius={2}
+            {...SHADOW}
+          />
+          <Rect
+            x={pad + (w - islandW) / 2 + 4}
+            y={pad + h * 0.42 + 4}
+            width={islandW - 8}
+            height={islandH - 8}
+            fill="#b0b0aa"
+            cornerRadius={1}
+          />
+          {[0, 1, 2].map((i) => (
+            <Circle
+              key={i}
+              x={pad + (w - islandW) / 2 + islandW * ((i + 1) / 4)}
+              y={pad + h * 0.42 + islandH + ftToPx(1.1)}
+              radius={ftToPx(0.55)}
+              fill="#f2f0ea"
+              stroke="#c8c4ba"
+              strokeWidth={1}
+              {...SHADOW}
+            />
+          ))}
+          <Rect
+            x={pad + w * 0.55}
+            y={pad + 4}
+            width={ftToPx(2.4)}
+            height={cabDepth - 6}
+            fill="#3a3a38"
+          />
+          {[0, 1, 2, 3].map((i) => (
+            <Circle
+              key={`b-${i}`}
+              x={pad + w * 0.55 + 8 + (i % 2) * 14}
+              y={pad + 10 + Math.floor(i / 2) * 12}
+              radius={4}
+              fill="#222"
+              stroke="#666"
+              strokeWidth={1}
+            />
+          ))}
+        </>
+      ) : (
+        <Rect
+          x={pad + w * 0.35}
+          y={pad + 4}
+          width={ftToPx(2.2)}
+          height={cabDepth - 6}
+          fill="#555"
         />
-      ))}
-      {/* Estufa simbólica */}
-      <Rect
-        x={pad + w * 0.55}
-        y={pad + 4}
-        width={ftToPx(2.4)}
-        height={cabDepth - 6}
-        fill="#3a3a38"
-      />
-      {[0, 1, 2, 3].map((i) => (
-        <Circle
-          key={`b-${i}`}
-          x={pad + w * 0.55 + 8 + (i % 2) * 14}
-          y={pad + 10 + Math.floor(i / 2) * 12}
-          radius={4}
-          fill="#222"
-          stroke="#666"
-          strokeWidth={1}
-        />
-      ))}
+      )}
     </Group>
   );
 }
 
-function BedroomFurniture({
-  pad,
-  w,
-  h,
-}: {
-  pad: number;
-  w: number;
-  h: number;
-}) {
-  const bedW = Math.min(w * 0.55, ftToPx(6));
+function BedroomFurniture({ pad, w, h, style }: PackProps) {
+  const bedW = Math.min(w * (style === "basico" ? 0.5 : 0.55), ftToPx(6));
   const bedH = Math.min(h * 0.7, ftToPx(7));
   const bedX = pad + (w - bedW) / 2;
   const bedY = pad + (h - bedH) / 2;
   const ns = ftToPx(1.4);
   return (
     <Group listening={false}>
-      {/* Cama */}
       <Rect
         x={bedX}
         y={bedY}
@@ -232,87 +229,91 @@ function BedroomFurniture({
         cornerRadius={2}
         {...SHADOW}
       />
-      {/* Cabecera */}
       <Rect
         x={bedX}
         y={bedY}
         width={bedW}
         height={ftToPx(0.7)}
-        fill="#5a4a3a"
+        fill={style === "basico" ? "#7a7068" : "#5a4a3a"}
       />
-      {/* Almohadas */}
-      <Rect
-        x={bedX + 6}
-        y={bedY + ftToPx(0.85)}
-        width={bedW * 0.38}
-        height={ftToPx(1.2)}
-        fill="#f7f5f0"
-        cornerRadius={2}
-      />
-      <Rect
-        x={bedX + bedW * 0.55}
-        y={bedY + ftToPx(0.85)}
-        width={bedW * 0.38}
-        height={ftToPx(1.2)}
-        fill="#f7f5f0"
-        cornerRadius={2}
-      />
-      {/* Runner / cobertor */}
-      <Rect
-        x={bedX + 4}
-        y={bedY + bedH * 0.45}
-        width={bedW - 8}
-        height={bedH * 0.48}
-        fill="#3d5a80"
-        opacity={0.85}
-      />
-      {/* Mesitas */}
-      <Rect
-        x={bedX - ns - 4}
-        y={bedY + 4}
-        width={ns}
-        height={ns}
-        fill="#8b7355"
-        {...SHADOW}
-      />
-      <Rect
-        x={bedX + bedW + 4}
-        y={bedY + 4}
-        width={ns}
-        height={ns}
-        fill="#8b7355"
-        {...SHADOW}
-      />
-      <Circle
-        x={bedX - ns / 2 - 4}
-        y={bedY + 4 + ns / 2}
-        radius={3}
-        fill="#e8dcc8"
-      />
-      <Circle
-        x={bedX + bedW + 4 + ns / 2}
-        y={bedY + 4 + ns / 2}
-        radius={3}
-        fill="#e8dcc8"
-      />
+      {style === "moderno" && (
+        <>
+          <Rect
+            x={bedX + 6}
+            y={bedY + ftToPx(0.85)}
+            width={bedW * 0.38}
+            height={ftToPx(1.2)}
+            fill="#f7f5f0"
+            cornerRadius={2}
+          />
+          <Rect
+            x={bedX + bedW * 0.55}
+            y={bedY + ftToPx(0.85)}
+            width={bedW * 0.38}
+            height={ftToPx(1.2)}
+            fill="#f7f5f0"
+            cornerRadius={2}
+          />
+          <Rect
+            x={bedX + 4}
+            y={bedY + bedH * 0.45}
+            width={bedW - 8}
+            height={bedH * 0.48}
+            fill="#3d5a80"
+            opacity={0.85}
+          />
+          <Rect
+            x={bedX - ns - 4}
+            y={bedY + 4}
+            width={ns}
+            height={ns}
+            fill="#8b7355"
+            {...SHADOW}
+          />
+          <Rect
+            x={bedX + bedW + 4}
+            y={bedY + 4}
+            width={ns}
+            height={ns}
+            fill="#8b7355"
+            {...SHADOW}
+          />
+          <Circle
+            x={bedX - ns / 2 - 4}
+            y={bedY + 4 + ns / 2}
+            radius={3}
+            fill="#e8dcc8"
+          />
+          <Circle
+            x={bedX + bedW + 4 + ns / 2}
+            y={bedY + 4 + ns / 2}
+            radius={3}
+            fill="#e8dcc8"
+          />
+        </>
+      )}
     </Group>
   );
 }
 
-function DiningFurniture({
-  pad,
-  w,
-  h,
-}: {
-  pad: number;
-  w: number;
-  h: number;
-}) {
+function DiningFurniture({ pad, w, h, style }: PackProps) {
   const tw = Math.min(w * 0.45, ftToPx(5));
   const th = Math.min(h * 0.35, ftToPx(3.5));
   const cx = pad + w / 2;
   const cy = pad + h / 2;
   const chairR = ftToPx(0.7);
+  const chairs =
+    style === "basico"
+      ? [
+          [0, -th / 2 - chairR - 4],
+          [0, th / 2 + chairR + 4],
+        ]
+      : [
+          [0, -th / 2 - chairR - 4],
+          [0, th / 2 + chairR + 4],
+          [-tw / 2 - chairR - 4, 0],
+          [tw / 2 + chairR + 4, 0],
+        ];
   return (
     <Group listening={false}>
       <Rect
@@ -320,16 +321,11 @@ function DiningFurniture({
         y={cy - th / 2}
         width={tw}
         height={th}
-        fill="#a67c52"
+        fill={style === "basico" ? "#b0a090" : "#a67c52"}
         cornerRadius={3}
         {...SHADOW}
       />
-      {[
-        [0, -th / 2 - chairR - 4],
-        [0, th / 2 + chairR + 4],
-        [-tw / 2 - chairR - 4, 0],
-        [tw / 2 + chairR + 4, 0],
-      ].map(([dx, dy], i) => (
+      {chairs.map(([dx, dy], i) => (
         <Circle
           key={i}
           x={cx + dx}
@@ -345,51 +341,54 @@ function DiningFurniture({
   );
 }
 
-function BathFurniture({
-  pad,
-  w,
-  h,
-}: {
-  pad: number;
-  w: number;
-  h: number;
-}) {
+function BathFurniture({ pad, w, h, style }: PackProps) {
   const tubW = Math.min(w * 0.4, ftToPx(5));
   const tubH = Math.min(h * 0.35, ftToPx(2.8));
   return (
     <Group listening={false}>
-      {/* Tina */}
+      {style === "moderno" ? (
+        <Rect
+          x={pad + 4}
+          y={pad + 4}
+          width={tubW}
+          height={tubH}
+          fill="#9ec9d9"
+          stroke="#6a9aab"
+          strokeWidth={1.5}
+          cornerRadius={6}
+          {...SHADOW}
+        />
+      ) : (
+        <Rect
+          x={pad + 4}
+          y={pad + 4}
+          width={Math.min(w * 0.32, ftToPx(3.5))}
+          height={Math.min(h * 0.32, ftToPx(3.5))}
+          fill="#c8d8e0"
+          stroke="#8aa0aa"
+          strokeWidth={1}
+          cornerRadius={2}
+          {...SHADOW}
+        />
+      )}
       <Rect
-        x={pad + 4}
+        x={pad + w - ftToPx(style === "basico" ? 2.6 : 3.2)}
         y={pad + 4}
-        width={tubW}
-        height={tubH}
-        fill="#9ec9d9"
-        stroke="#6a9aab"
-        strokeWidth={1.5}
-        cornerRadius={6}
-        {...SHADOW}
-      />
-      {/* Vanity */}
-      <Rect
-        x={pad + w - ftToPx(3.2)}
-        y={pad + 4}
-        width={ftToPx(3)}
+        width={ftToPx(style === "basico" ? 2.4 : 3)}
         height={ftToPx(1.8)}
-        fill="#d8d4cc"
+        fill={style === "basico" ? "#e0dcd4" : "#d8d4cc"}
         stroke="#a8a49c"
         strokeWidth={1}
         {...SHADOW}
       />
       <Circle
-        x={pad + w - ftToPx(1.7)}
+        x={pad + w - ftToPx(style === "basico" ? 1.4 : 1.7)}
         y={pad + 4 + ftToPx(0.9)}
         radius={ftToPx(0.55)}
         fill="#b8d4e0"
         stroke="#7aa0b0"
         strokeWidth={1}
       />
-      {/* Inodoro */}
       <Rect
         x={pad + w - ftToPx(2)}
         y={pad + h - ftToPx(3)}
@@ -401,10 +400,7 @@ function BathFurniture({
         cornerRadius={4}
         {...SHADOW}
       />
-      <EllipseOval
-        x={pad + w - ftToPx(1.2)}
-        y={pad + h - ftToPx(1.6)}
-      />
+      <EllipseOval x={pad + w - ftToPx(1.2)} y={pad + h - ftToPx(1.6)} />
     </Group>
   );
 }
@@ -425,11 +421,7 @@ function EllipseOval({ x, y }: { x: number; y: number }) {
 
 function LaundryFurniture({
   pad,
-}: {
-  pad: number;
-  w: number;
-  h: number;
-}) {
+}: PackProps) {
   const unit = ftToPx(2.4);
   return (
     <Group listening={false}>
