@@ -74,6 +74,14 @@ export function FloorPlanEditor({ initial, catalog }: Props) {
     [catalog],
   );
 
+  const catalogById = useMemo(() => {
+    const map: Record<string, { id: string; name: string }> = {};
+    for (const item of catalog) {
+      map[item.id] = { id: item.id, name: item.name };
+    }
+    return map;
+  }, [catalog]);
+
   const planRooms = useMemo(
     () => rooms.map(asPlanRoom).filter((r): r is PlanRoom => r != null),
     [rooms],
@@ -232,6 +240,7 @@ export function FloorPlanEditor({ initial, catalog }: Props) {
             selectedId={selectedId}
             onSelect={setSelectedId}
             onGeometryChange={onGeometryChange}
+            catalogById={catalogById}
           />
           <form
             className="flex flex-wrap items-end gap-2 rounded-md border border-[var(--line)] bg-white p-3"
