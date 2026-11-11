@@ -1,4 +1,5 @@
 import type { ProjectDoc } from '@/types/project'
+import { enrichProjects } from './enrich'
 import { compareProjects } from './helpers'
 import { beginnerProjects } from './network-plus/beginner'
 import { intermediateProjects } from './network-plus/intermediate'
@@ -9,26 +10,26 @@ import { sqlProjects } from './sql'
 import { securityProjects } from './security'
 
 /** Full Network+ progressive curriculum (projects 1–30). */
-export const NETWORK_PLUS_PROJECTS: ProjectDoc[] = [
-  ...beginnerProjects,
-  ...intermediateProjects,
-  ...advancedProjects,
-].sort((a, b) => (a.curriculumOrder ?? 0) - (b.curriculumOrder ?? 0))
-
-export const SYSADMIN_PROJECTS: ProjectDoc[] = [...sysadminProjects].sort(
-  (a, b) => (a.curriculumOrder ?? 0) - (b.curriculumOrder ?? 0),
+export const NETWORK_PLUS_PROJECTS: ProjectDoc[] = enrichProjects(
+  [...beginnerProjects, ...intermediateProjects, ...advancedProjects].sort(
+    (a, b) => (a.curriculumOrder ?? 0) - (b.curriculumOrder ?? 0),
+  ),
 )
 
-export const PYTHON_PROJECTS: ProjectDoc[] = [...pythonProjects].sort(
-  (a, b) => (a.curriculumOrder ?? 0) - (b.curriculumOrder ?? 0),
+export const SYSADMIN_PROJECTS: ProjectDoc[] = enrichProjects(
+  [...sysadminProjects].sort((a, b) => (a.curriculumOrder ?? 0) - (b.curriculumOrder ?? 0)),
 )
 
-export const SQL_PROJECTS: ProjectDoc[] = [...sqlProjects].sort(
-  (a, b) => (a.curriculumOrder ?? 0) - (b.curriculumOrder ?? 0),
+export const PYTHON_PROJECTS: ProjectDoc[] = enrichProjects(
+  [...pythonProjects].sort((a, b) => (a.curriculumOrder ?? 0) - (b.curriculumOrder ?? 0)),
 )
 
-export const SECURITY_PLUS_PROJECTS: ProjectDoc[] = [...securityProjects].sort(
-  (a, b) => (a.curriculumOrder ?? 0) - (b.curriculumOrder ?? 0),
+export const SQL_PROJECTS: ProjectDoc[] = enrichProjects(
+  [...sqlProjects].sort((a, b) => (a.curriculumOrder ?? 0) - (b.curriculumOrder ?? 0)),
+)
+
+export const SECURITY_PLUS_PROJECTS: ProjectDoc[] = enrichProjects(
+  [...securityProjects].sort((a, b) => (a.curriculumOrder ?? 0) - (b.curriculumOrder ?? 0)),
 )
 
 /** All instructional projects available in Project Library. */

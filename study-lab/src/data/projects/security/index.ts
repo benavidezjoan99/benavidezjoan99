@@ -1,5 +1,10 @@
 import type { ProjectDoc } from '@/types/project'
-import { labMilestones, securityDeliverables, securityProject } from '../helpers'
+import {
+  labMilestones,
+  mermaidDiagram,
+  securityDeliverables,
+  securityProject,
+} from '../helpers'
 
 export const sec01: ProjectDoc = securityProject({
   id: 'sec-01-sqli-fundamentals',
@@ -20,6 +25,17 @@ export const sec01: ProjectDoc = securityProject({
   businessScenario: 'Your mentor assigns Juice Shop challenges for education. You must capture learning notes and never reuse techniques against systems without written authorization.',
   technicalRequirements: ['Written scope: Juice Shop local instance URL only', 'Diagram of browser → app → DB trust boundary', 'Notes on at least one SQLi learning challenge completed in Juice Shop', 'Evidence screenshots redacting session secrets if needed', 'Ethics acknowledgment in portfolio'],
   architectureNotes: 'Attacker-learner browser → Juice Shop container/app → embedded DB. Label "AUTHORIZED LAB ONLY" on diagram.',
+  architectureDiagrams: [
+    mermaidDiagram(
+      'sec-01-boundary',
+      'Authorized lab trust boundary',
+      `flowchart LR
+  Learner[Learner browser] --> JS[Juice Shop localhost]
+  JS --> DB[(Embedded DB)]
+  Prod[Production systems] -.->|FORBIDDEN| Learner`,
+      'AUTHORIZED LAB ONLY — never point tooling at systems you do not own.',
+    ),
+  ],
   addressingPlan: [
     { name: 'Juice Shop', network: 'http://127.0.0.1:3000', mask: 'local', notes: 'Default local; confirm yours' },
     { name: 'Out of scope', network: 'Any non-owned system', mask: 'FORBIDDEN', notes: 'Hard rule' }
@@ -32,8 +48,8 @@ export const sec01: ProjectDoc = securityProject({
   ),
   verificationSteps: ['Scope statement signed in notes', 'Screenshots show local Juice Shop', 'No credentials from real employers used'],
   troubleshootingChallenges: [
-    { id: 't1', symptom: 'Juice Shop not starting.', hint: 'Follow official install; Docker/Node per docs; do not port-forward to Internet casually.' },
-    { id: 't2', symptom: 'Tempted to test a live site.', hint: 'STOP — out of scope; only disposable labs.' }
+    { id: 't1', symptom: 'Juice Shop not starting.', hint: 'Follow official install; Docker/Node per docs; do not port-forward to Internet casually.', severity: 'medium' },
+    { id: 't2', symptom: 'Tempted to test a live site.', hint: 'STOP — out of scope; only disposable labs.', severity: 'critical' },
   ],
   solutionGuide: 'Keep learning inside Juice Shop; focus on understanding impact and reporting. Attach scope + evidence + reflection.',
   portfolioDeliverables: securityDeliverables(),

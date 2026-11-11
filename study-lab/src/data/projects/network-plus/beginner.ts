@@ -1,5 +1,11 @@
 import type { ProjectDoc } from '@/types/project'
-import { networkProject, standardDeliverables, standardMilestones } from '../helpers'
+import {
+  mermaidDiagram,
+  networkProject,
+  standardDeliverables,
+  standardMilestones,
+  svgDiagram,
+} from '../helpers'
 
 export const project01: ProjectDoc = networkProject({
   id: 'net-01-basic-lan-setup',
@@ -20,6 +26,33 @@ export const project01: ProjectDoc = networkProject({
   businessScenario: 'A boutique accounting firm opens a two-room office. They need a reliable wired LAN so staff can share a printer and reach the Internet via a small ISP router. You must deliver a beginner-friendly build packet a weekend tech can follow without improvising VLANs yet.',
   technicalRequirements: ['At least four end hosts plus one printer on a single IPv4 subnet', 'One Layer-2 access switch and one edge gateway/router', 'Documented copper cabling plan (patch panel optional for diagrams)', 'Default gateway and DNS forwarders stated for all hosts', 'Connectivity matrix: host↔host, host↔gateway, host↔printer'],
   architectureNotes: 'Star topology: hosts → access switch → edge router → ISP cloud symbol. Label every access port and the uplink. Keep the diagram flat (no VLANs). Export Packet Tracer topology screenshots into the portfolio; do not embed a live simulator.',
+  architectureDiagrams: [
+    svgDiagram(
+      'net-01-star-svg',
+      'Star LAN placeholder (SVG)',
+      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 180" role="img" aria-label="Star LAN diagram">
+  <rect width="480" height="180" fill="#0b1626"/>
+  <rect x="200" y="70" width="80" height="40" rx="6" fill="#1a2f4a" stroke="#3d8bfd"/>
+  <text x="240" y="95" text-anchor="middle" fill="#e8f1ff" font-size="12">Switch</text>
+  <rect x="20" y="20" width="70" height="32" rx="4" fill="#152438" stroke="#9db0c9"/><text x="55" y="40" text-anchor="middle" fill="#e8f1ff" font-size="11">PC-1</text>
+  <rect x="20" y="74" width="70" height="32" rx="4" fill="#152438" stroke="#9db0c9"/><text x="55" y="94" text-anchor="middle" fill="#e8f1ff" font-size="11">PC-2</text>
+  <rect x="20" y="128" width="70" height="32" rx="4" fill="#152438" stroke="#9db0c9"/><text x="55" y="148" text-anchor="middle" fill="#e8f1ff" font-size="11">Printer</text>
+  <rect x="360" y="70" width="90" height="40" rx="6" fill="#1a2f4a" stroke="#1a9f75"/><text x="405" y="95" text-anchor="middle" fill="#e8f1ff" font-size="12">Gateway</text>
+  <line x1="90" y1="36" x2="200" y2="80" stroke="#2a3f5a"/><line x1="90" y1="90" x2="200" y2="90" stroke="#2a3f5a"/><line x1="90" y1="144" x2="200" y2="100" stroke="#2a3f5a"/><line x1="280" y1="90" x2="360" y2="90" stroke="#2a3f5a"/>
+</svg>`,
+      'Replace with your labeled Draw.io / Packet Tracer export for portfolio evidence.',
+    ),
+    mermaidDiagram(
+      'net-01-star-mermaid',
+      'Star LAN (Mermaid source)',
+      `flowchart LR
+  PC1[PC-1] --> SW[Access Switch]
+  PC2[PC-2] --> SW
+  PRT[Printer] --> SW
+  SW --> GW[Edge Gateway]
+  GW --> ISP((ISP))`,
+    ),
+  ],
   addressingPlan: [
     { name: 'Office LAN', network: '192.168.10.0/24', mask: '255.255.255.0', gateway: '192.168.10.1', vlan: 'N/A', notes: 'Hosts .10–.50; printer .20; gateway .1' },
   ],
@@ -30,8 +63,9 @@ export const project01: ProjectDoc = networkProject({
   ),
   verificationSteps: ['Ping default gateway from each host', 'Ping printer from a workstation', 'Document failure when gateway is wrong on one host', 'Confirm switch learns MAC addresses after traffic'],
   troubleshootingChallenges: [
-    { id: 't1', symptom: 'Host cannot ping gateway though link LED is up.', hint: 'Check IP/mask mismatch and correct gateway address.' },
-    { id: 't2', symptom: 'Two hosts on same switch cannot ping each other.', hint: 'Verify both are in 192.168.10.0/24 and not blocked by host firewall in the lab.' },
+    { id: 't1', symptom: 'Host cannot ping gateway though link LED is up.', hint: 'Check IP/mask mismatch and correct gateway address.', severity: 'high' },
+    { id: 't2', symptom: 'Two hosts on same switch cannot ping each other.', hint: 'Verify both are in 192.168.10.0/24 and not blocked by host firewall in the lab.', severity: 'medium' },
+    { id: 't3', symptom: 'Printer reachable but Internet path fails.', hint: 'Confirm default gateway and that the edge router has a documented upstream path.', severity: 'low' },
   ],
   solutionGuide: 'Confirm identical /24 masks, gateway .1 on the router LAN interface, and that the switch is purely L2. Renew host addressing after corrections. Keep full running-configs in Packet Tracer; attach screenshots as evidence.',
   portfolioDeliverables: standardDeliverables(),

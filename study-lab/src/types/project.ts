@@ -9,17 +9,32 @@ export type CareerTrack =
   | 'cybersecurity-engineer'
   | 'cloud-solutions-architect'
 
+export type ChallengeSeverity = 'low' | 'medium' | 'high' | 'critical'
+
+export type EvidenceKind =
+  | 'screenshot'
+  | 'config'
+  | 'log'
+  | 'diagram'
+  | 'file'
+  | 'self_report'
+
 export interface Milestone {
   id: string
   title: string
   tasks: string[]
+  /** Measurable pass/fail checks — prefer command/output criteria over vague “done”. */
   acceptanceCriteria: string[]
+  /** Collapsed optional nudge — never a full solution spoiler. */
+  hint?: string
 }
 
 export interface TroubleshootingChallenge {
   id: string
   symptom: string
   hint?: string
+  /** Impact / urgency label for triage practice. */
+  severity?: ChallengeSeverity
 }
 
 export interface Deliverable {
@@ -35,6 +50,25 @@ export interface AddressingRow {
   gateway?: string
   vlan?: string
   notes?: string
+}
+
+export interface EvidenceRubricItem {
+  id: string
+  label: string
+  description: string
+  /** What artifact types count toward evidence-based completion. */
+  accepts: EvidenceKind[]
+  /** If true, self-report alone is not enough for evidence-based credit. */
+  requiredForEvidence: boolean
+}
+
+export interface ArchitectureDiagram {
+  id: string
+  title: string
+  kind: 'mermaid' | 'svg' | 'placeholder'
+  /** Mermaid source, inline SVG, or short placeholder description. */
+  content: string
+  caption?: string
 }
 
 export interface ProjectDoc {
@@ -60,12 +94,16 @@ export interface ProjectDoc {
   businessScenario: string
   technicalRequirements: string[]
   architectureNotes: string
+  /** Documentation-only diagrams (Mermaid/SVG/placeholder) — not simulators. */
+  architectureDiagrams?: ArchitectureDiagram[]
   addressingPlan: AddressingRow[]
   milestones: Milestone[]
   verificationSteps: string[]
   troubleshootingChallenges: TroubleshootingChallenge[]
   solutionGuide: string
   portfolioDeliverables: Deliverable[]
+  /** What screenshots/configs/logs count as evidence vs self-report. */
+  evidenceRubric?: EvidenceRubricItem[]
 }
 
 /** Self-reported checklist vs evidence-backed completion. */

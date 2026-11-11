@@ -1,5 +1,10 @@
 import type { ProjectDoc } from '@/types/project'
-import { labMilestones, standardDeliverables, sysadminProject } from '../helpers'
+import {
+  labMilestones,
+  mermaidDiagram,
+  standardDeliverables,
+  sysadminProject,
+} from '../helpers'
 
 export const sa01: ProjectDoc = sysadminProject({
   id: 'sa-01-windows-server-install',
@@ -20,6 +25,17 @@ export const sa01: ProjectDoc = sysadminProject({
   businessScenario: 'A training company needs a repeatable Windows Server lab image for weekend classes. You must document a clean install and baseline so every student starts from the same hardened-enough template — not a random GUI click-path.',
   technicalRequirements: ['Local VM with evaluation Windows Server installed (GUI or Server Core — state which)', 'Hostname, timezone, and static or documented DHCP addressing recorded', 'Windows Update status noted; unnecessary roles not installed yet', 'Local Administrator password policy and firewall profile documented', 'Diagram of host hypervisor → VM → management NIC'],
   architectureNotes: 'Host PC/hypervisor runs a single Windows Server guest. Management access via console or RDP only inside your lab network. Label the virtual NIC and whether it is NAT or bridged.',
+  architectureDiagrams: [
+    mermaidDiagram(
+      'sa-01-hypervisor',
+      'Hypervisor → guest sketch',
+      `flowchart TB
+  Host[Lab host / hypervisor] --> VM[Windows Server guest]
+  VM --> NIC[Virtual NIC NAT or bridged]
+  Admin[Admin console / RDP lab-only] --> VM`,
+      'Documentation only — Study Lab does not run hypervisors or provision VMs.',
+    ),
+  ],
   addressingPlan: [
     { name: 'Lab host', network: 'Host-only / NAT', mask: 'N/A', notes: 'Hypervisor management' },
     { name: 'WS-DC01 (future DC)', network: '10.50.10.10', mask: '255.255.255.0', gateway: '10.50.10.1', notes: 'Static preferred for later AD labs' }
@@ -32,8 +48,8 @@ export const sa01: ProjectDoc = sysadminProject({
   ),
   verificationSteps: ['OS boots to login without setup wizards pending', 'ipconfig / ifconfig equivalent matches plan', 'Baseline checklist items checked with screenshots', 'Document failure when wrong ISO edition was selected'],
   troubleshootingChallenges: [
-    { id: 't1', symptom: 'VM boots to UEFI shell or loops on ISO.', hint: 'Check boot order, Secure Boot, and generation/firmware settings.' },
-    { id: 't2', symptom: 'Cannot reach gateway after static IP.', hint: 'Verify virtual NIC mode (NAT vs bridged) and host firewall.' }
+    { id: 't1', symptom: 'VM boots to UEFI shell or loops on ISO.', hint: 'Check boot order, Secure Boot, and generation/firmware settings.', severity: 'high' },
+    { id: 't2', symptom: 'Cannot reach gateway after static IP.', hint: 'Verify virtual NIC mode (NAT vs bridged) and host firewall.', severity: 'medium' },
   ],
   solutionGuide: 'Use evaluation media, allocate enough RAM/disk, set a memorable lab hostname (e.g. WS-DC01), prefer static IP for later AD. Keep evidence: install summary, ipconfig, firewall, updates. Never expose RDP to the public Internet.',
   portfolioDeliverables: standardDeliverables(),
