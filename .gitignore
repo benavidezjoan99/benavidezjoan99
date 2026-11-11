@@ -45,3 +45,8 @@ next-env.d.ts
 *.sqlite-journal
 *.sqlite-wal
 *.sqlite-shm
+
+# ADA+ List Manager build outputs
+ADAPlusListManager/**/bin/
+ADAPlusListManager/**/obj/
+ADAPlusListManager/publish/

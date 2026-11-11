@@ -1,0 +1,62 @@
+[
+  {
+    "VType": "DEMO",
+    "ReceptionLin": 1,
+    "EAN": {
+      "EANMODE": "DEMO-REF-1001",
+      "EANTALL": "42",
+      "EANCOL": "01",
+      "EANCOD": "0840000000001",
+      "EANCANT": "2"
+    },
+    "Modelo": {
+      "MODDESC": "Pantalón demostración algodón",
+      "MODMODE": "DEMO-REF-1001",
+      "MODPAIS": "XX"
+    }
+  },
+  {
+    "VType": "DEMO",
+    "ReceptionLin": 2,
+    "EAN": {
+      "EANMODE": "DEMO-REF-1002",
+      "EANTALL": "38",
+      "EANCOL": "05",
+      "EANCOD": "0840000000002",
+      "EANCANT": null
+    },
+    "Modelo": {
+      "MODDESC": "Camisa demostración lino",
+      "MODMODE": "DEMO-REF-1002",
+      "MODPAIS": "XX"
+    }
+  },
+  {
+    "VType": "DEMO",
+    "ReceptionLin": 3,
+    "EAN": {
+      "EANMODE": "DEMO-REF-1003",
+      "EANTALL": "M",
+      "EANCOL": "12",
+      "EANCOD": "0001234567890",
+      "EANCANT": "1"
+    },
+    "Modelo": {
+      "MODDESC": "Jersey demostración punto",
+      "MODMODE": "DEMO-REF-1003",
+      "MODPAIS": "XX"
+    }
+  },
+  {
+    "VType": "DEMO",
+    "ReceptionLin": 4,
+    "EANMODE": "DEMO-REF-1004",
+    "EANTALL": "40",
+    "EANCOL": "03",
+    "EANCOD": "0840000000099",
+    "Modelo": {
+      "MODDESC": "Falda demostración sin cantidad",
+      "MODMODE": "DEMO-REF-1004"
+    }
+  }
+]

@@ -1,0 +1,45 @@
+<UserControl x:Class="ADAPlusListManager.Desktop.Views.ImportView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <DockPanel>
+    <StackPanel DockPanel.Dock="Top">
+      <TextBlock Text="Obtener listados" Style="{StaticResource PageTitle}" />
+      <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+        <Button Content="Obtener desde Zebra" Style="{StaticResource PrimaryButton}" Command="{Binding ImportFromDeviceCommand}" />
+        <Button Content="Importar JSON local" Style="{StaticResource PrimaryButton}" Command="{Binding ImportLocalFileCommand}" />
+        <Button Content="Cargar DEMO" Style="{StaticResource PrimaryButton}" Command="{Binding LoadDemoCommand}" />
+        <CheckBox Content="Marcar como DEMO" IsChecked="{Binding IsDemoMode}" VerticalAlignment="Center" Margin="8,0,0,0" />
+      </StackPanel>
+      <TextBlock Text="{Binding StatusMessage}" TextWrapping="Wrap" Margin="0,0,0,12" FontWeight="SemiBold" />
+    </StackPanel>
+    <Grid>
+      <Grid.RowDefinitions>
+        <RowDefinition Height="1.2*" />
+        <RowDefinition Height="*" />
+      </Grid.RowDefinitions>
+      <GroupBox Header="Previsualización de mapeo (provisional)">
+        <DataGrid ItemsSource="{Binding MappingRows}" AutoGenerateColumns="False" IsReadOnly="True">
+          <DataGrid.Columns>
+            <DataGridTextColumn Header="Campo original" Binding="{Binding OriginalField}" Width="*" />
+            <DataGridTextColumn Header="Valor original" Binding="{Binding OriginalValue}" Width="*" />
+            <DataGridTextColumn Header="Columna destino" Binding="{Binding TargetColumn}" Width="*" />
+            <DataGridTextColumn Header="Interpretado" Binding="{Binding InterpretedValue}" Width="*" />
+            <DataGridTextColumn Header="Estado" Binding="{Binding ValidationStatus}" Width="*" />
+          </DataGrid.Columns>
+        </DataGrid>
+      </GroupBox>
+      <GroupBox Grid.Row="1" Header="Artículos (vista previa)" Margin="0,8,0,0">
+        <DataGrid ItemsSource="{Binding PreviewItems}" AutoGenerateColumns="False" IsReadOnly="True">
+          <DataGrid.Columns>
+            <DataGridTextColumn Header="Referencia" Binding="{Binding Reference}" Width="*" />
+            <DataGridTextColumn Header="Código" Binding="{Binding Barcode}" Width="*" />
+            <DataGridTextColumn Header="Descripción" Binding="{Binding Description}" Width="2*" />
+            <DataGridTextColumn Header="Talla" Binding="{Binding SizeCode}" Width="80" />
+            <DataGridTextColumn Header="Color" Binding="{Binding ColorCode}" Width="80" />
+            <DataGridTextColumn Header="Cantidad" Binding="{Binding Quantity}" Width="90" />
+          </DataGrid.Columns>
+        </DataGrid>
+      </GroupBox>
+    </Grid>
+  </DockPanel>
+</UserControl>
