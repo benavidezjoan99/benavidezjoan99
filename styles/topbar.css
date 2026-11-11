@@ -1,0 +1,100 @@
+.topbar {
+  background: var(--color-bg-surface);
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  padding: 0 var(--space-6);
+  gap: var(--space-4);
+  height: var(--topbar-height);
+}
+
+.topbar__breadcrumb {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.topbar__breadcrumb-home {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+}
+
+.topbar__breadcrumb-sep {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+}
+
+.topbar__breadcrumb-current {
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-medium);
+}
+
+.topbar__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.topbar__icon-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--border-radius-sm);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-elevated);
+  color: var(--color-text-secondary);
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-fast);
+  position: relative;
+}
+
+.topbar__icon-btn:hover {
+  background: var(--color-bg-hover);
+  color: var(--color-text-primary);
+  border-color: var(--color-accent-blue);
+}
+
+.topbar__icon-btn--active {
+  background: var(--color-accent-blue-dim);
+  border-color: var(--color-accent-blue);
+  color: var(--color-accent-blue);
+}
+
+.topbar__user {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.topbar__user:hover {
+  background: var(--color-bg-elevated);
+}
+
+.topbar__user-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--color-accent-blue);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.topbar__username {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+}

@@ -1,0 +1,16 @@
+{
+  "decks": [
+    {
+      "id": "deck-protocols",
+      "title": "Common Network Protocols & Ports",
+      "category": "Protocols",
+      "cardCount": 18
+    },
+    {
+      "id": "deck-subnetting",
+      "title": "Subnetting Quick Reference",
+      "category": "IP Addressing",
+      "cardCount": 12
+    }
+  ]
+}

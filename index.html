@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NetAdmin Academy — CompTIA Network+ Training</title>
+
+  <link rel="stylesheet" href="styles/base.css">
+  <link rel="stylesheet" href="styles/layout.css">
+  <link rel="stylesheet" href="styles/components.css">
+  <link rel="stylesheet" href="styles/sidebar.css">
+  <link rel="stylesheet" href="styles/topbar.css">
+  <link rel="stylesheet" href="styles/dashboard.css">
+  <link rel="stylesheet" href="styles/theory.css">
+  <link rel="stylesheet" href="styles/labs.css">
+  <link rel="stylesheet" href="styles/quiz.css">
+  <link rel="stylesheet" href="styles/exam.css">
+  <link rel="stylesheet" href="styles/flashcards.css">
+  <link rel="stylesheet" href="styles/progress.css">
+  <link rel="stylesheet" href="styles/settings.css">
+  <link rel="stylesheet" href="styles/auth.css">
+  <link rel="stylesheet" href="styles/ai-panel.css">
+  <link rel="stylesheet" href="styles/pomodoro.css">
+</head>
+<body>
+
+  <div class="auth-overlay" id="auth-overlay">
+    <div class="auth-card">
+      <div class="auth-logo">
+        <div class="auth-logo__icon">🌐</div>
+        <div>
+          <div class="auth-logo__name">NetAdmin Academy</div>
+          <div class="auth-logo__tagline">CompTIA N10-009 Training Platform</div>
+        </div>
+      </div>
+      <h2 class="auth-title">Welcome back</h2>
+      <p class="auth-sub">Sign in to continue your studies</p>
+      <form class="auth-form" id="auth-form" autocomplete="off">
+        <div class="auth-field">
+          <label class="auth-label" for="auth-username">Username</label>
+          <input class="auth-input" type="text" id="auth-username" name="username"
+                 placeholder="admin" autocomplete="username">
+        </div>
+        <div class="auth-field">
+          <label class="auth-label" for="auth-password">Password</label>
+          <input class="auth-input" type="password" id="auth-password" name="password"
+                 placeholder="••••••••" autocomplete="current-password">
+        </div>
+        <div class="auth-error" id="auth-error">Invalid username or password.</div>
+        <button type="submit" class="auth-submit">Sign In</button>
+      </form>
+      <p class="auth-hint">Default credentials: admin / admin</p>
+    </div>
+  </div>
+
+  <div id="app">
+    <div id="sidebar"></div>
+    <div id="topbar"></div>
+    <main id="main-content" role="main"></main>
+  </div>
+
+  <div id="modal-root"></div>
+  <div id="toast-root"></div>
+  <div id="pomodoro-widget"></div>
+  <div id="ai-panel"></div>
+
+  <script type="module" src="scripts/main.js"></script>
+</body>
+</html>

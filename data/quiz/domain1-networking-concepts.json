@@ -1,0 +1,136 @@
+{
+  "domain": "1.0 Networking Concepts",
+  "domainId": "domain1",
+  "questions": [
+    {
+      "id": "d1q001",
+      "text": "A technician needs to identify which OSI layer is responsible for converting data into bits for transmission over the network medium. Which layer performs this function?",
+      "options": ["Data Link", "Network", "Physical", "Transport"],
+      "correctIndex": 2,
+      "explanation": "The Physical layer (Layer 1) is responsible for converting data into bits (electrical signals, light pulses, or radio waves) and transmitting them over the physical medium. The Data Link layer frames the data, the Network layer handles logical addressing, and the Transport layer manages end-to-end communication.",
+      "domain": "1.0 Networking Concepts",
+      "subdomain": "OSI Model",
+      "difficulty": "easy",
+      "tags": ["OSI", "Physical", "Layer 1"]
+    },
+    {
+      "id": "d1q002",
+      "text": "Which of the following BEST describes the purpose of ARP in a TCP/IP network?",
+      "options": [
+        "Assigns IP addresses to hosts dynamically",
+        "Resolves IP addresses to MAC addresses on the local network",
+        "Translates domain names to IP addresses",
+        "Routes packets between different networks"
+      ],
+      "correctIndex": 1,
+      "explanation": "ARP (Address Resolution Protocol) resolves a known IPv4 address to its corresponding MAC address on the local network segment. DHCP assigns IP addresses, DNS resolves hostnames to IPs, and routing is handled by routers using IP.",
+      "domain": "1.0 Networking Concepts",
+      "subdomain": "Networking Protocols",
+      "difficulty": "easy",
+      "tags": ["ARP", "MAC", "IPv4", "Layer 2"]
+    },
+    {
+      "id": "d1q003",
+      "text": "An administrator is subnetting 172.16.0.0/16 to create subnets supporting up to 500 hosts each. Which subnet mask should be used?",
+      "options": ["/22", "/23", "/24", "/25"],
+      "correctIndex": 1,
+      "explanation": "A /23 mask provides 512 total addresses (510 usable hosts), which satisfies the requirement of up to 500 hosts. A /24 only provides 254 usable hosts (insufficient). A /22 provides 1022 hosts (works but wasteful). A /25 provides only 126 hosts. The BEST (most efficient) answer is /23.",
+      "domain": "1.0 Networking Concepts",
+      "subdomain": "IP Addressing",
+      "difficulty": "medium",
+      "tags": ["subnetting", "CIDR", "host calculation"]
+    },
+    {
+      "id": "d1q004",
+      "text": "Which of the following IPv4 address ranges is reserved for APIPA (Automatic Private IP Addressing)?",
+      "options": [
+        "10.0.0.0 – 10.255.255.255",
+        "169.254.0.0 – 169.254.255.255",
+        "172.16.0.0 – 172.31.255.255",
+        "192.168.0.0 – 192.168.255.255"
+      ],
+      "correctIndex": 1,
+      "explanation": "APIPA addresses fall in the 169.254.0.0/16 range (169.254.0.0–169.254.255.255). A Windows or Linux host assigns itself an APIPA address when it fails to obtain one via DHCP. The other options are private (RFC 1918) address spaces used for intentional private networking.",
+      "domain": "1.0 Networking Concepts",
+      "subdomain": "IP Addressing",
+      "difficulty": "easy",
+      "tags": ["APIPA", "IPv4", "private addressing", "DHCP"]
+    },
+    {
+      "id": "d1q005",
+      "text": "A network uses the address 10.0.0.0/8. A host has the IP 10.45.200.17. What is the network address for this host?",
+      "options": ["10.0.0.0", "10.45.0.0", "10.45.200.0", "10.255.255.0"],
+      "correctIndex": 0,
+      "explanation": "With a /8 mask (255.0.0.0), only the first octet is the network portion. All hosts in 10.0.0.0/8 share the network address 10.0.0.0. The host portion is the remaining three octets (.45.200.17). Applying the mask: 10.45.200.17 AND 255.0.0.0 = 10.0.0.0.",
+      "domain": "1.0 Networking Concepts",
+      "subdomain": "IP Addressing",
+      "difficulty": "medium",
+      "tags": ["subnetting", "network address", "Class A", "subnet mask"]
+    },
+    {
+      "id": "d1q006",
+      "text": "Which protocol operates at Layer 4 of the OSI model and provides reliable, connection-oriented delivery?",
+      "options": ["IP", "ICMP", "UDP", "TCP"],
+      "correctIndex": 3,
+      "explanation": "TCP (Transmission Control Protocol) operates at Layer 4 (Transport) and provides reliable, connection-oriented delivery using a three-way handshake (SYN, SYN-ACK, ACK), sequence numbers, acknowledgments, and retransmission. UDP is also Layer 4 but is connectionless and unreliable. IP and ICMP operate at Layer 3.",
+      "domain": "1.0 Networking Concepts",
+      "subdomain": "Transport Protocols",
+      "difficulty": "easy",
+      "tags": ["TCP", "Layer 4", "Transport", "reliable"]
+    },
+    {
+      "id": "d1q007",
+      "text": "A user reports they cannot access any websites but CAN ping the default gateway. Which of the following is the MOST likely cause?",
+      "options": [
+        "The NIC is faulty",
+        "The default gateway is unreachable",
+        "DNS is not resolving hostnames",
+        "The subnet mask is incorrect"
+      ],
+      "correctIndex": 2,
+      "explanation": "If the user can ping the default gateway, Layer 3 connectivity to the local network is working. The inability to access websites (hostnames) but having gateway connectivity points to a DNS resolution failure. The NIC works (ping succeeds), gateway is reachable (pinged successfully), and subnet mask must be correct (local connectivity works).",
+      "domain": "1.0 Networking Concepts",
+      "subdomain": "Network Services",
+      "difficulty": "medium",
+      "tags": ["DNS", "troubleshooting", "ping", "gateway"]
+    },
+    {
+      "id": "d1q008",
+      "text": "Which port number is associated with the DNS protocol?",
+      "options": ["21", "25", "53", "143"],
+      "correctIndex": 2,
+      "explanation": "DNS (Domain Name System) uses port 53. It uses UDP port 53 for standard queries and TCP port 53 for zone transfers (and when responses exceed 512 bytes). Port 21 is FTP, port 25 is SMTP (email), and port 143 is IMAP.",
+      "domain": "1.0 Networking Concepts",
+      "subdomain": "Ports and Protocols",
+      "difficulty": "easy",
+      "tags": ["DNS", "port", "UDP", "TCP", "53"]
+    },
+    {
+      "id": "d1q009",
+      "text": "What is the primary difference between a hub and a switch in a network?",
+      "options": [
+        "A hub operates at Layer 3; a switch operates at Layer 2",
+        "A hub broadcasts to all ports; a switch forwards frames to specific ports based on MAC address",
+        "A hub uses IP addresses; a switch uses MAC addresses",
+        "A hub supports full-duplex; a switch supports half-duplex only"
+      ],
+      "correctIndex": 1,
+      "explanation": "A hub (Layer 1 device) broadcasts all received data to every port, regardless of destination — creating a single collision domain. A switch (Layer 2 device) learns MAC addresses and forwards frames only to the specific port where the destination device is located, reducing collisions and improving efficiency.",
+      "domain": "1.0 Networking Concepts",
+      "subdomain": "Network Devices",
+      "difficulty": "easy",
+      "tags": ["hub", "switch", "MAC", "Layer 2", "broadcast"]
+    },
+    {
+      "id": "d1q010",
+      "text": "Which IPv6 address type is equivalent to the IPv4 loopback address 127.0.0.1?",
+      "options": ["::1", "fe80::1", "ff02::1", "2001::1"],
+      "correctIndex": 0,
+      "explanation": "The IPv6 loopback address is ::1 (fully written as 0000:0000:0000:0000:0000:0000:0000:0001), equivalent to IPv4's 127.0.0.1. fe80::/10 is the link-local range. ff02::1 is the all-nodes multicast address. 2001::/32 is a global unicast (Teredo) range.",
+      "domain": "1.0 Networking Concepts",
+      "subdomain": "IPv6",
+      "difficulty": "medium",
+      "tags": ["IPv6", "loopback", "::1", "addressing"]
+    }
+  ]
+}
