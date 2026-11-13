@@ -1,17 +1,21 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, type ReactNode } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import {
   ContactShadows,
   Html,
   OrbitControls,
   PerspectiveCamera,
+  SoftShadows,
 } from "@react-three/drei";
 import * as THREE from "three";
 import {
   buildScene3D,
-  floorColorForTexture,
+  floorMaterialSpec,
+  floorUvRepeat,
+  furnitureMaterialSpec,
+  wallMaterialSpec,
   wallSolidParts,
   type CatalogHint3D,
   type FloorMesh3D,
@@ -20,6 +24,12 @@ import {
   type Scene3D,
   type WallMesh3D,
 } from "@/domain/floor-plan";
+import {
+  floorTextureForRoom,
+  getFabricTexture3D,
+  getWallPaintTexture3D,
+  getWoodFinishTexture3D,
+} from "./textures3d";
 
 export type WalkMode = "orbit" | "walk";
 
@@ -40,12 +50,24 @@ function FloorMesh({
   selected: boolean;
   onSelect: () => void;
 }) {
-  const color = floorColorForTexture(floor.texture);
+  const spec = floorMaterialSpec(floor.texture);
+  const uv = floorUvRepeat(floor.widthFt, floor.depthFt, spec.tileFt);
+  const map = useMemo(
+    () => floorTextureForRoom(floor.texture, uv.x, uv.y),
+    [floor.texture, uv.x, uv.y],
+  );
+
+  useEffect(() => {
+    return () => {
+      map.dispose();
+    };
+  }, [map]);
+
   return (
     <group>
       <mesh
         rotation={[-Math.PI / 2, 0, 0]}
-        position={[floor.position.x, 0.01, floor.position.z]}
+        position={[floor.position.x, 0.02, floor.position.z]}
         receiveShadow
         onClick={(e) => {
           e.stopPropagation();
@@ -54,22 +76,36 @@ function FloorMesh({
       >
         <planeGeometry args={[floor.widthFt, floor.depthFt]} />
         <meshStandardMaterial
-          color={color}
-          roughness={floor.texture.startsWith("wood") ? 0.55 : 0.75}
-          metalness={floor.texture === "epoxy" ? 0.25 : 0.05}
+          map={map}
+          color="#ffffff"
+          roughness={spec.roughness}
+          metalness={spec.metalness}
+          envMapIntensity={0.35}
+        />
+      </mesh>
+      {/* Grosor de losa sutil */}
+      <mesh
+        position={[floor.position.x, -0.04, floor.position.z]}
+        receiveShadow
+      >
+        <boxGeometry args={[floor.widthFt, 0.08, floor.depthFt]} />
+        <meshStandardMaterial
+          color={spec.baseColor}
+          roughness={0.9}
+          metalness={0.02}
         />
       </mesh>
       {selected && (
         <mesh
           rotation={[-Math.PI / 2, 0, 0]}
-          position={[floor.position.x, 0.03, floor.position.z]}
+          position={[floor.position.x, 0.04, floor.position.z]}
         >
-          <planeGeometry args={[floor.widthFt + 0.15, floor.depthFt + 0.15]} />
-          <meshBasicMaterial color="#1f7a6c" transparent opacity={0.18} />
+          <planeGeometry args={[floor.widthFt + 0.12, floor.depthFt + 0.12]} />
+          <meshBasicMaterial color="#1f7a6c" transparent opacity={0.16} />
         </mesh>
       )}
       <Html
-        position={[floor.position.x, 0.2, floor.position.z]}
+        position={[floor.position.x, 0.35, floor.position.z]}
         center
         distanceFactor={28}
         style={{
@@ -77,7 +113,7 @@ function FloorMesh({
           color: "#142226",
           fontSize: "11px",
           fontWeight: 600,
-          background: "rgba(245,248,249,0.82)",
+          background: "rgba(245,248,249,0.86)",
           padding: "2px 6px",
           borderRadius: "4px",
           whiteSpace: "nowrap",
@@ -95,7 +131,11 @@ function WallMesh({ wall }: { wall: WallMesh3D }) {
     () => wallSolidParts(wall.lengthFt, wall.heightFt, wall.openings),
     [wall],
   );
-  const fill = wall.color.fill;
+  const paint = wallMaterialSpec(wall.color);
+  const map = useMemo(
+    () => getWallPaintTexture3D(paint.fill, paint.variation),
+    [paint.fill, paint.variation],
+  );
   const stroke = wall.color.stroke;
 
   return (
@@ -115,67 +155,123 @@ function WallMesh({ wall }: { wall: WallMesh3D }) {
           >
             <boxGeometry args={[p.w, p.h, wall.thicknessFt]} />
             <meshStandardMaterial
-              color={fill}
-              roughness={0.85}
-              metalness={0.02}
+              map={map}
+              color="#ffffff"
+              roughness={paint.roughness}
+              metalness={paint.metalness}
+              envMapIntensity={0.2}
             />
           </mesh>
         );
       })}
-      {/* Vidrio en ventanas; puertas quedan como hueco */}
       {wall.openings
         .filter((op) => op.kind === "window")
         .map((op, i) => {
           const cx = -wall.lengthFt / 2 + op.alongFt + op.widthFt / 2;
+          const cy = op.sillFt + op.heightFt / 2;
+          const left = cx - op.widthFt / 2;
+          const right = cx + op.widthFt / 2;
+          const top = op.sillFt + op.heightFt;
+          const t = wall.thicknessFt * 1.05;
           return (
-            <mesh
-              key={`glass-${i}`}
-              position={[cx, op.sillFt + op.heightFt / 2, 0]}
-            >
-              <boxGeometry
-                args={[op.widthFt, op.heightFt, wall.thicknessFt * 0.15]}
-              />
-              <meshStandardMaterial
-                color="#a8c4d4"
-                transparent
-                opacity={0.35}
-                roughness={0.15}
-                metalness={0.1}
-              />
-            </mesh>
+            <group key={`win-${i}`}>
+              <mesh position={[cx, cy, 0]}>
+                <boxGeometry
+                  args={[op.widthFt, op.heightFt, wall.thicknessFt * 0.12]}
+                />
+                <meshPhysicalMaterial
+                  color="#c5dde8"
+                  transparent
+                  opacity={0.4}
+                  roughness={0.08}
+                  metalness={0.05}
+                  transmission={0.5}
+                  thickness={0.15}
+                />
+              </mesh>
+              <mesh position={[left, cy, 0]}>
+                <boxGeometry args={[0.12, op.heightFt + 0.12, t]} />
+                <meshStandardMaterial
+                  color={stroke}
+                  roughness={0.55}
+                  metalness={0.08}
+                />
+              </mesh>
+              <mesh position={[right, cy, 0]}>
+                <boxGeometry args={[0.12, op.heightFt + 0.12, t]} />
+                <meshStandardMaterial
+                  color={stroke}
+                  roughness={0.55}
+                  metalness={0.08}
+                />
+              </mesh>
+              <mesh position={[cx, top + 0.06, 0]}>
+                <boxGeometry args={[op.widthFt + 0.12, 0.12, t]} />
+                <meshStandardMaterial
+                  color={stroke}
+                  roughness={0.55}
+                  metalness={0.08}
+                />
+              </mesh>
+              <mesh position={[cx, op.sillFt - 0.06, 0]}>
+                <boxGeometry args={[op.widthFt + 0.12, 0.12, t]} />
+                <meshStandardMaterial
+                  color={stroke}
+                  roughness={0.55}
+                  metalness={0.08}
+                />
+              </mesh>
+            </group>
           );
         })}
-      {/* Jambas verticales de puerta */}
       {wall.openings
         .filter((op) => op.kind === "door")
         .map((op, i) => {
           const left = -wall.lengthFt / 2 + op.alongFt;
           const right = left + op.widthFt;
+          const mid = left + op.widthFt / 2;
           return (
             <group key={`jamb-${i}`}>
-              <mesh position={[left, op.heightFt / 2, 0]}>
+              <mesh position={[left, op.heightFt / 2, 0]} castShadow>
                 <boxGeometry
-                  args={[0.12, op.heightFt, wall.thicknessFt * 1.05]}
+                  args={[0.14, op.heightFt, wall.thicknessFt * 1.08]}
                 />
-                <meshStandardMaterial color={stroke} roughness={0.7} />
+                <meshStandardMaterial
+                  color={stroke}
+                  roughness={0.55}
+                  metalness={0.06}
+                />
               </mesh>
-              <mesh position={[right, op.heightFt / 2, 0]}>
+              <mesh position={[right, op.heightFt / 2, 0]} castShadow>
                 <boxGeometry
-                  args={[0.12, op.heightFt, wall.thicknessFt * 1.05]}
+                  args={[0.14, op.heightFt, wall.thicknessFt * 1.08]}
                 />
-                <meshStandardMaterial color={stroke} roughness={0.7} />
+                <meshStandardMaterial
+                  color={stroke}
+                  roughness={0.55}
+                  metalness={0.06}
+                />
               </mesh>
-              <mesh
-                position={[
-                  left + op.widthFt / 2,
-                  op.heightFt + 0.06,
-                  0,
-                ]}
-              >
+              <mesh position={[mid, op.heightFt + 0.07, 0]} castShadow>
                 <boxGeometry
-                  args={[op.widthFt + 0.12, 0.12, wall.thicknessFt * 1.05]}
+                  args={[op.widthFt + 0.14, 0.14, wall.thicknessFt * 1.08]}
                 />
-                <meshStandardMaterial color={stroke} roughness={0.7} />
+                <meshStandardMaterial
+                  color={stroke}
+                  roughness={0.55}
+                  metalness={0.06}
+                />
+              </mesh>
+              {/* Umbral */}
+              <mesh position={[mid, 0.04, 0]}>
+                <boxGeometry
+                  args={[op.widthFt, 0.08, wall.thicknessFt * 1.2]}
+                />
+                <meshStandardMaterial
+                  color="#6a5a48"
+                  roughness={0.5}
+                  metalness={0.05}
+                />
               </mesh>
             </group>
           );
@@ -184,16 +280,181 @@ function WallMesh({ wall }: { wall: WallMesh3D }) {
   );
 }
 
+function BedProxy({
+  item,
+  mat,
+}: {
+  item: FurnitureMesh3D;
+  mat: ReactNode;
+}) {
+  const { x, z } = item.position;
+  const w = item.widthFt;
+  const d = item.depthFt;
+  const pillowMap = useMemo(() => getFabricTexture3D("#f7f5f0"), []);
+  return (
+    <group position={[x, 0, z]} rotation={[0, item.rotationY, 0]}>
+      <mesh position={[0, 0.35, 0]} castShadow receiveShadow>
+        <boxGeometry args={[w, 0.7, d]} />
+        <meshStandardMaterial
+          color="#c8c0b4"
+          roughness={0.55}
+          metalness={0.04}
+        />
+      </mesh>
+      <mesh position={[0, 0.95, 0]} castShadow>
+        <boxGeometry args={[w * 0.94, 0.45, d * 0.92]} />
+        {mat}
+      </mesh>
+      <mesh position={[0, 1.4, -d * 0.42]} castShadow>
+        <boxGeometry args={[w * 0.96, 1.1, 0.18]} />
+        <meshStandardMaterial
+          color="#5a4a3a"
+          roughness={0.5}
+          metalness={0.05}
+        />
+      </mesh>
+      <mesh position={[0, 1.15, -d * 0.22]} castShadow>
+        <boxGeometry args={[w * 0.7, 0.35, 0.55]} />
+        <meshStandardMaterial
+          map={pillowMap}
+          color="#ffffff"
+          roughness={0.85}
+        />
+      </mesh>
+    </group>
+  );
+}
+
 function FurnitureMesh({ item }: { item: FurnitureMesh3D }) {
+  const spec = furnitureMaterialSpec(item.furnitureKind, item.color);
+  const map = useMemo(() => {
+    if (spec.finish === "fabric") return getFabricTexture3D(item.color);
+    if (spec.finish === "wood") return getWoodFinishTexture3D(item.color);
+    return null;
+  }, [spec.finish, item.color]);
+
+  const { x, y, z } = item.position;
+  const w = item.widthFt;
+  const h = item.heightFt;
+  const d = item.depthFt;
+
+  const mat = (
+    <meshStandardMaterial
+      map={map ?? undefined}
+      color={map ? "#ffffff" : item.color}
+      roughness={spec.roughness}
+      metalness={spec.metalness}
+      envMapIntensity={0.4}
+    />
+  );
+
+  // Proxies con piezas (no una sola caja flat)
+  if (item.furnitureKind === "sofa") {
+    return (
+      <group position={[x, 0, z]} rotation={[0, item.rotationY, 0]}>
+        <mesh position={[0, 0.45, 0]} castShadow receiveShadow>
+          <boxGeometry args={[w, 0.9, d]} />
+          {mat}
+        </mesh>
+        <mesh position={[0, 1.35, -d * 0.32]} castShadow>
+          <boxGeometry args={[w * 0.96, 1.4, d * 0.28]} />
+          {mat}
+        </mesh>
+        <mesh position={[-w * 0.42, 1.05, 0.05]} castShadow>
+          <boxGeometry args={[w * 0.12, 0.9, d * 0.85]} />
+          {mat}
+        </mesh>
+        <mesh position={[w * 0.42, 1.05, 0.05]} castShadow>
+          <boxGeometry args={[w * 0.12, 0.9, d * 0.85]} />
+          {mat}
+        </mesh>
+      </group>
+    );
+  }
+
+  if (item.furnitureKind === "table") {
+    const topH = Math.min(0.18, h * 0.12);
+    const leg = 0.14;
+    const inset = 0.25;
+    return (
+      <group position={[x, 0, z]} rotation={[0, item.rotationY, 0]}>
+        <mesh position={[0, h - topH / 2, 0]} castShadow receiveShadow>
+          <boxGeometry args={[w, topH, d]} />
+          {mat}
+        </mesh>
+        {(
+          [
+            [-w / 2 + inset, -d / 2 + inset],
+            [w / 2 - inset, -d / 2 + inset],
+            [-w / 2 + inset, d / 2 - inset],
+            [w / 2 - inset, d / 2 - inset],
+          ] as const
+        ).map(([lx, lz], i) => (
+          <mesh key={i} position={[lx, (h - topH) / 2, lz]} castShadow>
+            <boxGeometry args={[leg, h - topH, leg]} />
+            <meshStandardMaterial
+              color="#5a4634"
+              roughness={0.55}
+              metalness={0.05}
+            />
+          </mesh>
+        ))}
+      </group>
+    );
+  }
+
+  if (item.furnitureKind === "bed") {
+    return <BedProxy item={item} mat={mat} />;
+  }
+
+  if (item.furnitureKind === "cabinet" || item.furnitureKind === "island") {
+    return (
+      <group position={[x, 0, z]} rotation={[0, item.rotationY, 0]}>
+        <mesh position={[0, h / 2, 0]} castShadow receiveShadow>
+          <boxGeometry args={[w, h * 0.92, d]} />
+          {mat}
+        </mesh>
+        <mesh position={[0, h - 0.06, 0]} castShadow>
+          <boxGeometry args={[w + 0.08, 0.12, d + 0.08]} />
+          <meshStandardMaterial
+            color="#9a9a96"
+            roughness={0.35}
+            metalness={0.15}
+          />
+        </mesh>
+      </group>
+    );
+  }
+
+  if (item.furnitureKind === "chair") {
+    return (
+      <group position={[x, 0, z]} rotation={[0, item.rotationY, 0]}>
+        <mesh position={[0, 1.1, 0]} castShadow receiveShadow>
+          <boxGeometry args={[w, 0.35, d]} />
+          {mat}
+        </mesh>
+        <mesh position={[0, 2.0, -d * 0.35]} castShadow>
+          <boxGeometry args={[w * 0.9, 1.4, 0.18]} />
+          {mat}
+        </mesh>
+        <mesh position={[0, 0.55, 0]} castShadow>
+          <boxGeometry args={[0.12, 1.1, 0.12]} />
+          <meshStandardMaterial color="#4a4038" roughness={0.5} />
+        </mesh>
+      </group>
+    );
+  }
+
+  // Fallback: caja con material rico
   return (
     <mesh
-      position={[item.position.x, item.position.y, item.position.z]}
+      position={[x, y, z]}
       rotation={[0, item.rotationY, 0]}
       castShadow
       receiveShadow
     >
-      <boxGeometry args={[item.widthFt, item.heightFt, item.depthFt]} />
-      <meshStandardMaterial color={item.color} roughness={0.65} metalness={0.05} />
+      <boxGeometry args={[w, h, d]} />
+      {mat}
     </mesh>
   );
 }
@@ -206,11 +467,11 @@ function Ground({ bounds }: { bounds: Scene3D["bounds"] }) {
   return (
     <mesh
       rotation={[-Math.PI / 2, 0, 0]}
-      position={[cx, -0.02, cz]}
+      position={[cx, -0.06, cz]}
       receiveShadow
     >
       <planeGeometry args={[w, d]} />
-      <meshStandardMaterial color="#d5e0e2" roughness={1} />
+      <meshStandardMaterial color="#cfd8da" roughness={0.95} metalness={0} />
     </mesh>
   );
 }
@@ -327,25 +588,46 @@ function SceneContent({
 
   return (
     <>
-      <color attach="background" args={["#e8f0f1"]} />
-      <fog attach="fog" args={["#e8f0f1", 55, 120]} />
-      <ambientLight intensity={0.62} />
+      <color attach="background" args={["#e4eef0"]} />
+      <fog attach="fog" args={["#e4eef0", 48, 110]} />
+      <SoftShadows size={18} samples={12} focus={0.85} />
+
+      <ambientLight intensity={0.38} color="#f4f7f8" />
+      <hemisphereLight args={["#f7fafb", "#8fa3a8", 0.55]} />
       <directionalLight
         castShadow
-        intensity={1.05}
+        intensity={1.25}
+        color="#fff6ea"
         position={[
-          scene.center.x + 18,
-          28,
-          scene.center.z - 14,
+          scene.center.x + 16,
+          26,
+          scene.center.z - 12,
         ]}
-        shadow-mapSize={[1024, 1024]}
-        shadow-camera-far={90}
-        shadow-camera-left={-40}
-        shadow-camera-right={40}
-        shadow-camera-top={40}
-        shadow-camera-bottom={-40}
+        shadow-mapSize={[2048, 2048]}
+        shadow-bias={-0.00025}
+        shadow-normalBias={0.035}
+        shadow-camera-far={100}
+        shadow-camera-left={-42}
+        shadow-camera-right={42}
+        shadow-camera-top={42}
+        shadow-camera-bottom={-42}
       />
-      <hemisphereLight args={["#f5f8f9", "#9bb0b4", 0.4]} />
+      {/* Fill suave opuesto */}
+      <directionalLight
+        intensity={0.35}
+        color="#d8e8f0"
+        position={[
+          scene.center.x - 14,
+          18,
+          scene.center.z + 10,
+        ]}
+      />
+      <pointLight
+        intensity={0.28}
+        color="#ffe8c8"
+        distance={50}
+        position={[scene.center.x, 10, scene.center.z]}
+      />
 
       <PerspectiveCamera
         makeDefault
@@ -390,11 +672,12 @@ function SceneContent({
       ))}
 
       <ContactShadows
-        position={[scene.center.x, 0.005, scene.center.z]}
-        opacity={0.28}
-        scale={span + 20}
-        blur={2}
-        far={16}
+        position={[scene.center.x, 0.01, scene.center.z]}
+        opacity={0.42}
+        scale={span + 22}
+        blur={2.6}
+        far={20}
+        color="#2a383c"
       />
     </>
   );
@@ -413,12 +696,15 @@ export function FloorPlan3DScene({
   );
 
   return (
-    <div className="relative h-[560px] overflow-hidden rounded-lg border border-[var(--line)] bg-[#e8f0f1]">
+    <div className="relative h-[560px] overflow-hidden rounded-lg border border-[var(--line)] bg-[#e4eef0]">
       <Canvas
         key={mode}
         shadows
-        dpr={[1, 1.5]}
-        gl={{ antialias: true, alpha: false }}
+        dpr={[1, 1.75]}
+        gl={{ antialias: true, alpha: false, toneMapping: THREE.ACESFilmicToneMapping }}
+        onCreated={({ gl }) => {
+          gl.toneMappingExposure = 1.05;
+        }}
         onPointerMissed={() => {
           if (selectedId) onSelect(null);
         }}
