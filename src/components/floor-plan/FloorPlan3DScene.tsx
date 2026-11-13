@@ -181,24 +181,35 @@ function OpeningMesh({ entity }: { entity: OpeningEntity3D }) {
       position={[entity.position.x, entity.position.y, entity.position.z]}
       rotation={[0, entity.rotationY, 0]}
     >
-      {entity.parts.map((p) => (
-        <mesh
-          key={`${entity.id}-${p.id}`}
-          position={[p.localPosition.x, p.localPosition.y, p.localPosition.z]}
-          castShadow={p.role !== "glass"}
-          receiveShadow={p.role !== "glass"}
-        >
-          <boxGeometry args={[p.size.x, p.size.y, p.size.z]} />
-          <meshStandardMaterial
-            color={p.color}
-            transparent={p.role === "glass" || p.opacity < 1}
-            opacity={p.role === "glass" ? Math.min(0.45, p.opacity) : p.opacity}
-            roughness={p.roughness}
-            metalness={p.metalness}
-            depthWrite={p.role !== "glass"}
-          />
-        </mesh>
-      ))}
+      {entity.parts.map((p) => {
+        const isGlass = p.role === "glass";
+        return (
+          <mesh
+            key={`${entity.id}-${p.id}`}
+            position={[
+              p.localPosition.x,
+              p.localPosition.y,
+              p.localPosition.z,
+            ]}
+            castShadow={!isGlass}
+            receiveShadow={!isGlass}
+            renderOrder={isGlass ? 2 : 1}
+          >
+            <boxGeometry args={[p.size.x, p.size.y, p.size.z]} />
+            <meshStandardMaterial
+              color={p.color}
+              transparent={isGlass || p.opacity < 1}
+              opacity={isGlass ? Math.min(0.4, p.opacity) : p.opacity}
+              roughness={p.roughness}
+              metalness={p.metalness}
+              depthWrite={!isGlass}
+              polygonOffset
+              polygonOffsetFactor={isGlass ? -1 : 1}
+              polygonOffsetUnits={isGlass ? -1 : 1}
+            />
+          </mesh>
+        );
+      })}
     </group>
   );
 }

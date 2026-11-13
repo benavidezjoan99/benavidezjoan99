@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
+  boundsOverlapXY,
   buildOpeningEntities,
   countPartsByRole,
   doorAssemblyParts,
+  partBoundsXY,
   windowAssemblyParts,
 } from "../openings3d";
 import { buildScene3D, type PlanRoom3DInput } from "../scene3d";
@@ -46,6 +48,34 @@ describe("openings3d entities", () => {
     expect(counts.glass).toBe(4);
     expect(counts.sill).toBe(1);
     expect(counts.mullion).toBeGreaterThanOrEqual(2);
+  });
+
+  it("window frame sits inside the opening (no edge-centered jambs)", () => {
+    const w = 3.5;
+    const h = 3.5;
+    const jamb = 0.11;
+    const parts = windowAssemblyParts(w, h, 0.45);
+    const left = parts.find((p) => p.id === "jamb-l")!;
+    const right = parts.find((p) => p.id === "jamb-r")!;
+    // Centros dentro del hueco, no en ±w/2 (que z-fight con el muro)
+    expect(left.localPosition.x).toBeCloseTo(-w / 2 + jamb / 2, 5);
+    expect(right.localPosition.x).toBeCloseTo(w / 2 - jamb / 2, 5);
+    expect(Math.abs(left.localPosition.x)).toBeLessThan(w / 2);
+    expect(Math.abs(right.localPosition.x)).toBeLessThan(w / 2);
+  });
+
+  it("window glass does not overlap frame/mullion in XY", () => {
+    const parts = windowAssemblyParts(3.5, 3.5, 0.45);
+    const glass = parts.filter((p) => p.role === "glass");
+    const solids = parts.filter(
+      (p) => p.role === "frame" || p.role === "mullion" || p.role === "sill",
+    );
+    for (const g of glass) {
+      const gb = partBoundsXY(g);
+      for (const s of solids) {
+        expect(boundsOverlapXY(gb, partBoundsXY(s), 0.01)).toBe(false);
+      }
+    }
   });
 
   it("buildScene3D emits explicit opening entities", () => {

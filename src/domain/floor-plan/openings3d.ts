@@ -193,6 +193,8 @@ export function doorAssemblyParts(
 
 /**
  * Ensamble de ventana: marco, alféizar, travesaño, vidrio.
+ * Marco 100% DENTRO del hueco (no centrado en el borde del muro) para evitar
+ * z-fighting / costura oscura en el perímetro muro↔ventana.
  */
 export function windowAssemblyParts(
   widthFt: number,
@@ -200,18 +202,27 @@ export function windowAssemblyParts(
   wallThicknessFt: number,
 ): OpeningPart3D[] {
   const t = Math.max(0.3, wallThicknessFt);
-  const jamb = 0.12;
+  const jamb = 0.11;
+  const mullion = 0.07;
+  const inset = 0.04; // holgura vidrio ↔ marco/mullion
+  const frameDepth = t * 0.88; // ligeramente más fino que el muro
+  const glassDepth = Math.min(0.06, t * 0.12);
+  const mullionDepth = frameDepth * 0.55;
   const parts: OpeningPart3D[] = [];
+
+  // Marco interior al hueco: centros a ±(w/2 − jamb/2)
+  const leftX = -widthFt / 2 + jamb / 2;
+  const rightX = widthFt / 2 - jamb / 2;
   parts.push(
     part(
       "jamb-l",
       "frame",
-      -widthFt / 2,
+      leftX,
       heightFt / 2,
       0,
       jamb,
-      heightFt + jamb,
-      t * 1.1,
+      heightFt,
+      frameDepth,
       FRAME,
     ),
   );
@@ -219,25 +230,27 @@ export function windowAssemblyParts(
     part(
       "jamb-r",
       "frame",
-      widthFt / 2,
+      rightX,
       heightFt / 2,
       0,
       jamb,
-      heightFt + jamb,
-      t * 1.1,
+      heightFt,
+      frameDepth,
       FRAME,
     ),
   );
+  // Header / sill entre las jambas (sin solapar esquinas)
+  const railW = Math.max(0.2, widthFt - jamb * 2);
   parts.push(
     part(
       "header",
       "frame",
       0,
-      heightFt + jamb / 2,
+      heightFt - jamb / 2,
       0,
-      widthFt + jamb,
+      railW,
       jamb,
-      t * 1.1,
+      frameDepth,
       FRAME,
     ),
   );
@@ -246,26 +259,32 @@ export function windowAssemblyParts(
       "sill",
       "sill",
       0,
-      -jamb / 2,
-      t * 0.15,
-      widthFt + jamb * 1.4,
+      jamb / 2,
+      frameDepth * 0.08,
+      railW + 0.06,
       jamb,
-      t * 1.35,
+      frameDepth * 1.15,
       SILL,
       { roughness: 0.45 },
     ),
   );
-  // Mullion cruz
+
+  // Luz interior del marco
+  const clearW = widthFt - jamb * 2;
+  const clearH = heightFt - jamb * 2;
+  const clearCy = heightFt / 2;
+
+  // Mullions solo en el claro (no penetran jambas)
   parts.push(
     part(
       "mullion-v",
       "mullion",
       0,
-      heightFt / 2,
+      clearCy,
       0,
-      0.08,
-      heightFt,
-      t * 0.35,
+      mullion,
+      clearH,
+      mullionDepth,
       FRAME,
     ),
   );
@@ -274,31 +293,26 @@ export function windowAssemblyParts(
       "mullion-h",
       "mullion",
       0,
-      heightFt / 2,
+      clearCy,
       0,
-      widthFt,
-      0.08,
-      t * 0.35,
+      clearW,
+      mullion,
+      mullionDepth,
       FRAME,
     ),
   );
-  // Cuatro paneles de vidrio
-  const gw = (widthFt - jamb * 2 - 0.08) / 2;
-  const gh = (heightFt - 0.08) / 2;
-  const offsets: [number, number][] = [
-    [-gw / 2 - 0.04, gh / 2 + 0.04],
-    [gw / 2 + 0.04, gh / 2 + 0.04],
-    [-gw / 2 - 0.04, gh / 2 - 0.04 + gh * 0],
-    [gw / 2 + 0.04, -gh / 2 - 0.04],
-  ];
-  // Fix glass positions properly
+
+  // Cuatro paneles de vidrio claramente insetos (sin tocar marco/mullion)
+  const gw = (clearW - mullion) / 2 - inset;
+  const gh = (clearH - mullion) / 2 - inset;
+  const ox = (clearW + mullion) / 4;
+  const oy = (clearH + mullion) / 4;
   const glassCenters: [number, number][] = [
-    [-(gw / 2 + 0.04), heightFt * 0.75],
-    [gw / 2 + 0.04, heightFt * 0.75],
-    [-(gw / 2 + 0.04), heightFt * 0.25],
-    [gw / 2 + 0.04, heightFt * 0.25],
+    [-ox, clearCy + oy],
+    [ox, clearCy + oy],
+    [-ox, clearCy - oy],
+    [ox, clearCy - oy],
   ];
-  void offsets;
   glassCenters.forEach(([gx, gy], i) => {
     parts.push(
       part(
@@ -306,16 +320,46 @@ export function windowAssemblyParts(
         "glass",
         gx,
         gy,
-        0,
-        gw,
-        gh,
-        t * 0.1,
+        // Ligero offset Z vs mullion para evitar coplanaridad
+        glassDepth * 0.35,
+        Math.max(0.15, gw),
+        Math.max(0.15, gh),
+        glassDepth,
         GLASS,
-        { opacity: 0.38, roughness: 0.08, metalness: 0.05 },
+        { opacity: 0.36, roughness: 0.08, metalness: 0.05 },
       ),
     );
   });
   return parts;
+}
+
+/** Rectángulo XY de una pieza (para tests de no-solape vidrio/marco). */
+export function partBoundsXY(p: OpeningPart3D): {
+  minX: number;
+  maxX: number;
+  minY: number;
+  maxY: number;
+} {
+  return {
+    minX: p.localPosition.x - p.size.x / 2,
+    maxX: p.localPosition.x + p.size.x / 2,
+    minY: p.localPosition.y - p.size.y / 2,
+    maxY: p.localPosition.y + p.size.y / 2,
+  };
+}
+
+/** ¿Dos AABBs XY se solapan con margen (ft)? */
+export function boundsOverlapXY(
+  a: ReturnType<typeof partBoundsXY>,
+  b: ReturnType<typeof partBoundsXY>,
+  margin = 0,
+): boolean {
+  return !(
+    a.maxX <= b.minX + margin ||
+    a.minX >= b.maxX - margin ||
+    a.maxY <= b.minY + margin ||
+    a.minY >= b.maxY - margin
+  );
 }
 
 /** Mundo: centro del opening a partir del muro + opening relativo. */
