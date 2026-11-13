@@ -7,7 +7,6 @@ import {
   Html,
   OrbitControls,
   PerspectiveCamera,
-  SoftShadows,
 } from "@react-three/drei";
 import * as THREE from "three";
 import {
@@ -590,22 +589,21 @@ function SceneContent({
     <>
       <color attach="background" args={["#e4eef0"]} />
       <fog attach="fog" args={["#e4eef0", 48, 110]} />
-      <SoftShadows size={18} samples={12} focus={0.85} />
 
-      <ambientLight intensity={0.38} color="#f4f7f8" />
+      <ambientLight intensity={0.42} color="#f4f7f8" />
       <hemisphereLight args={["#f7fafb", "#8fa3a8", 0.55]} />
       <directionalLight
         castShadow
-        intensity={1.25}
+        intensity={1.2}
         color="#fff6ea"
         position={[
           scene.center.x + 16,
           26,
           scene.center.z - 12,
         ]}
-        shadow-mapSize={[2048, 2048]}
+        shadow-mapSize={[1536, 1536]}
         shadow-bias={-0.00025}
-        shadow-normalBias={0.035}
+        shadow-normalBias={0.04}
         shadow-camera-far={100}
         shadow-camera-left={-42}
         shadow-camera-right={42}
@@ -614,7 +612,7 @@ function SceneContent({
       />
       {/* Fill suave opuesto */}
       <directionalLight
-        intensity={0.35}
+        intensity={0.38}
         color="#d8e8f0"
         position={[
           scene.center.x - 14,
@@ -623,7 +621,7 @@ function SceneContent({
         ]}
       />
       <pointLight
-        intensity={0.28}
+        intensity={0.3}
         color="#ffe8c8"
         distance={50}
         position={[scene.center.x, 10, scene.center.z]}
