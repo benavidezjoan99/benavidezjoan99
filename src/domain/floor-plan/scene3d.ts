@@ -7,6 +7,10 @@ import {
   type FloorTextureKind,
 } from "./floor-texture";
 import { resolveWallColor, type WallColorSwatch } from "./wall-paint";
+import {
+  buildOpeningEntities,
+  type OpeningEntity3D,
+} from "./openings3d";
 import type { RoomType } from "@/lib/types";
 
 /** Altura de pared por defecto (ft) — alineada a wallPaintQuantityFromPlan. */
@@ -119,6 +123,8 @@ export type Scene3D = {
   floors: FloorMesh3D[];
   walls: WallMesh3D[];
   furniture: FurnitureMesh3D[];
+  /** Puertas/ventanas como entidades con marco/hoja/vidrio. */
+  openings: OpeningEntity3D[];
   /** Centro aproximado de la planta (para cámara). */
   center: Vec3;
   /** Extensión máxima en XZ (ft). */
@@ -626,6 +632,7 @@ export function buildScene3D(
     floors,
     walls,
     furniture,
+    openings: buildOpeningEntities(walls),
     center: {
       x: (minX + maxX) / 2,
       y: 0,

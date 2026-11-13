@@ -1,16 +1,33 @@
 "use client";
 
 import * as THREE from "three";
-import type { FloorTextureKind } from "@/domain/floor-plan";
-import { shadeHex } from "@/domain/floor-plan";
+import type { FloorTextureKind, RgbaBuffer } from "@/domain/floor-plan";
+import {
+  heightFieldForFloor,
+  heightFieldForWallPaint,
+  normalMapRgbaFromHeight,
+  normalStrengthForFloor,
+  roughnessMapRgbaForFloor,
+  roughnessMapRgbaForWall,
+  shadeHex,
+} from "@/domain/floor-plan";
 
 /**
  * Texturas procedurales de mayor resolución para Three.js.
  * Solo cliente (canvas). Cache por kind / swatch.
+ * Incluye sets PBR: albedo + normal + roughness (sin red en runtime).
  */
 
+export type PbrMapSet = {
+  albedo: THREE.CanvasTexture;
+  normal: THREE.CanvasTexture;
+  roughness: THREE.CanvasTexture;
+};
+
 const floorCache = new Map<FloorTextureKind, THREE.CanvasTexture>();
+const floorPbrCache = new Map<FloorTextureKind, PbrMapSet>();
 const wallCache = new Map<string, THREE.CanvasTexture>();
+const wallPbrCache = new Map<string, PbrMapSet>();
 const fabricCache = new Map<string, THREE.CanvasTexture>();
 const woodFinishCache = new Map<string, THREE.CanvasTexture>();
 
@@ -21,14 +38,29 @@ function makeCanvas(w: number, h: number): HTMLCanvasElement {
   return c;
 }
 
-function asTexture(canvas: HTMLCanvasElement): THREE.CanvasTexture {
+function asTexture(
+  canvas: HTMLCanvasElement,
+  colorSpace: THREE.ColorSpace = THREE.SRGBColorSpace,
+): THREE.CanvasTexture {
   const tex = new THREE.CanvasTexture(canvas);
-  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.colorSpace = colorSpace;
   tex.wrapS = THREE.RepeatWrapping;
   tex.wrapT = THREE.RepeatWrapping;
   tex.anisotropy = 8;
   tex.needsUpdate = true;
   return tex;
+}
+
+function rgbaToTexture(
+  buf: RgbaBuffer,
+  colorSpace: THREE.ColorSpace = THREE.NoColorSpace,
+): THREE.CanvasTexture {
+  const c = makeCanvas(buf.width, buf.height);
+  const ctx = c.getContext("2d")!;
+  const img = ctx.createImageData(buf.width, buf.height);
+  img.data.set(buf.data);
+  ctx.putImageData(img, 0, 0);
+  return asTexture(c, colorSpace);
 }
 
 function paintWood(dark: boolean): HTMLCanvasElement {
@@ -329,4 +361,79 @@ export function floorTextureForRoom(
   clone.repeat.set(repeatX, repeatY);
   clone.needsUpdate = true;
   return clone;
+}
+
+/** Set PBR de piso (albedo + normal + roughness), cacheado por kind. */
+export function getFloorPbrMaps(kind: FloorTextureKind): PbrMapSet {
+  let cached = floorPbrCache.get(kind);
+  if (cached) return cached;
+  const size = 256;
+  const albedo = getFloorTexture3D(kind);
+  const hf = heightFieldForFloor(kind, size);
+  const normal = rgbaToTexture(
+    normalMapRgbaFromHeight(hf, normalStrengthForFloor(kind)),
+    THREE.NoColorSpace,
+  );
+  const roughness = rgbaToTexture(
+    roughnessMapRgbaForFloor(kind, size),
+    THREE.NoColorSpace,
+  );
+  cached = { albedo, normal, roughness };
+  floorPbrCache.set(kind, cached);
+  return cached;
+}
+
+/** Clona el set PBR con UV repeat del ambiente. */
+export function floorPbrForRoom(
+  kind: FloorTextureKind,
+  repeatX: number,
+  repeatY: number,
+): PbrMapSet {
+  const base = getFloorPbrMaps(kind);
+  const cloneMap = (tex: THREE.CanvasTexture, srgb: boolean) => {
+    const c = tex.clone();
+    c.wrapS = THREE.RepeatWrapping;
+    c.wrapT = THREE.RepeatWrapping;
+    c.colorSpace = srgb ? THREE.SRGBColorSpace : THREE.NoColorSpace;
+    c.repeat.set(repeatX, repeatY);
+    c.needsUpdate = true;
+    return c;
+  };
+  return {
+    albedo: cloneMap(base.albedo, true),
+    normal: cloneMap(base.normal, false),
+    roughness: cloneMap(base.roughness, false),
+  };
+}
+
+/** Set PBR de pintura de pared. */
+export function getWallPbrMaps(
+  fill: string,
+  variation = 0.14,
+): PbrMapSet {
+  const key = `${fill}|${variation}|pbr`;
+  let cached = wallPbrCache.get(key);
+  if (cached) return cached;
+  const size = 256;
+  const albedo = getWallPaintTexture3D(fill, variation);
+  const hf = heightFieldForWallPaint(variation, size);
+  const normal = rgbaToTexture(
+    normalMapRgbaFromHeight(hf, 1.6),
+    THREE.NoColorSpace,
+  );
+  normal.repeat.set(2.5, 2);
+  const roughness = rgbaToTexture(
+    roughnessMapRgbaForWall(0.82, variation, size),
+    THREE.NoColorSpace,
+  );
+  roughness.repeat.set(2.5, 2);
+  cached = { albedo, normal, roughness };
+  wallPbrCache.set(key, cached);
+  return cached;
+}
+
+export function disposePbrSet(set: PbrMapSet): void {
+  set.albedo.dispose();
+  set.normal.dispose();
+  set.roughness.dispose();
 }

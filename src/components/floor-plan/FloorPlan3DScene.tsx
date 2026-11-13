@@ -19,14 +19,16 @@ import {
   type CatalogHint3D,
   type FloorMesh3D,
   type FurnitureMesh3D,
+  type OpeningEntity3D,
   type PlanRoom3DInput,
   type Scene3D,
   type WallMesh3D,
 } from "@/domain/floor-plan";
 import {
-  floorTextureForRoom,
+  disposePbrSet,
+  floorPbrForRoom,
   getFabricTexture3D,
-  getWallPaintTexture3D,
+  getWallPbrMaps,
   getWoodFinishTexture3D,
 } from "./textures3d";
 
@@ -40,6 +42,9 @@ type Props = {
   mode: WalkMode;
 };
 
+const FLOOR_NORMAL_SCALE = new THREE.Vector2(1, 1);
+const WALL_NORMAL_SCALE = new THREE.Vector2(0.7, 0.7);
+
 function FloorMesh({
   floor,
   selected,
@@ -51,16 +56,16 @@ function FloorMesh({
 }) {
   const spec = floorMaterialSpec(floor.texture);
   const uv = floorUvRepeat(floor.widthFt, floor.depthFt, spec.tileFt);
-  const map = useMemo(
-    () => floorTextureForRoom(floor.texture, uv.x, uv.y),
+  const pbr = useMemo(
+    () => floorPbrForRoom(floor.texture, uv.x, uv.y),
     [floor.texture, uv.x, uv.y],
   );
 
   useEffect(() => {
     return () => {
-      map.dispose();
+      disposePbrSet(pbr);
     };
-  }, [map]);
+  }, [pbr]);
 
   return (
     <group>
@@ -75,14 +80,15 @@ function FloorMesh({
       >
         <planeGeometry args={[floor.widthFt, floor.depthFt]} />
         <meshStandardMaterial
-          map={map}
-          color="#ffffff"
-          roughness={spec.roughness}
+          map={pbr.albedo}
+          normalMap={pbr.normal}
+          roughnessMap={pbr.roughness}
+          roughness={1}
           metalness={spec.metalness}
-          envMapIntensity={0.35}
+          normalScale={FLOOR_NORMAL_SCALE}
+          envMapIntensity={0.4}
         />
       </mesh>
-      {/* Grosor de losa sutil */}
       <mesh
         position={[floor.position.x, -0.04, floor.position.z]}
         receiveShadow
@@ -131,11 +137,10 @@ function WallMesh({ wall }: { wall: WallMesh3D }) {
     [wall],
   );
   const paint = wallMaterialSpec(wall.color);
-  const map = useMemo(
-    () => getWallPaintTexture3D(paint.fill, paint.variation),
+  const pbr = useMemo(
+    () => getWallPbrMaps(paint.fill, paint.variation),
     [paint.fill, paint.variation],
   );
-  const stroke = wall.color.stroke;
 
   return (
     <group
@@ -154,127 +159,57 @@ function WallMesh({ wall }: { wall: WallMesh3D }) {
           >
             <boxGeometry args={[p.w, p.h, wall.thicknessFt]} />
             <meshStandardMaterial
-              map={map}
-              color="#ffffff"
-              roughness={paint.roughness}
+              map={pbr.albedo}
+              normalMap={pbr.normal}
+              roughnessMap={pbr.roughness}
+              roughness={1}
               metalness={paint.metalness}
-              envMapIntensity={0.2}
+              normalScale={WALL_NORMAL_SCALE}
+              envMapIntensity={0.25}
             />
           </mesh>
         );
       })}
-      {wall.openings
-        .filter((op) => op.kind === "window")
-        .map((op, i) => {
-          const cx = -wall.lengthFt / 2 + op.alongFt + op.widthFt / 2;
-          const cy = op.sillFt + op.heightFt / 2;
-          const left = cx - op.widthFt / 2;
-          const right = cx + op.widthFt / 2;
-          const top = op.sillFt + op.heightFt;
-          const t = wall.thicknessFt * 1.05;
-          return (
-            <group key={`win-${i}`}>
-              <mesh position={[cx, cy, 0]}>
-                <boxGeometry
-                  args={[op.widthFt, op.heightFt, wall.thicknessFt * 0.12]}
-                />
-                <meshPhysicalMaterial
-                  color="#c5dde8"
-                  transparent
-                  opacity={0.4}
-                  roughness={0.08}
-                  metalness={0.05}
-                  transmission={0.5}
-                  thickness={0.15}
-                />
-              </mesh>
-              <mesh position={[left, cy, 0]}>
-                <boxGeometry args={[0.12, op.heightFt + 0.12, t]} />
-                <meshStandardMaterial
-                  color={stroke}
-                  roughness={0.55}
-                  metalness={0.08}
-                />
-              </mesh>
-              <mesh position={[right, cy, 0]}>
-                <boxGeometry args={[0.12, op.heightFt + 0.12, t]} />
-                <meshStandardMaterial
-                  color={stroke}
-                  roughness={0.55}
-                  metalness={0.08}
-                />
-              </mesh>
-              <mesh position={[cx, top + 0.06, 0]}>
-                <boxGeometry args={[op.widthFt + 0.12, 0.12, t]} />
-                <meshStandardMaterial
-                  color={stroke}
-                  roughness={0.55}
-                  metalness={0.08}
-                />
-              </mesh>
-              <mesh position={[cx, op.sillFt - 0.06, 0]}>
-                <boxGeometry args={[op.widthFt + 0.12, 0.12, t]} />
-                <meshStandardMaterial
-                  color={stroke}
-                  roughness={0.55}
-                  metalness={0.08}
-                />
-              </mesh>
-            </group>
-          );
-        })}
-      {wall.openings
-        .filter((op) => op.kind === "door")
-        .map((op, i) => {
-          const left = -wall.lengthFt / 2 + op.alongFt;
-          const right = left + op.widthFt;
-          const mid = left + op.widthFt / 2;
-          return (
-            <group key={`jamb-${i}`}>
-              <mesh position={[left, op.heightFt / 2, 0]} castShadow>
-                <boxGeometry
-                  args={[0.14, op.heightFt, wall.thicknessFt * 1.08]}
-                />
-                <meshStandardMaterial
-                  color={stroke}
-                  roughness={0.55}
-                  metalness={0.06}
-                />
-              </mesh>
-              <mesh position={[right, op.heightFt / 2, 0]} castShadow>
-                <boxGeometry
-                  args={[0.14, op.heightFt, wall.thicknessFt * 1.08]}
-                />
-                <meshStandardMaterial
-                  color={stroke}
-                  roughness={0.55}
-                  metalness={0.06}
-                />
-              </mesh>
-              <mesh position={[mid, op.heightFt + 0.07, 0]} castShadow>
-                <boxGeometry
-                  args={[op.widthFt + 0.14, 0.14, wall.thicknessFt * 1.08]}
-                />
-                <meshStandardMaterial
-                  color={stroke}
-                  roughness={0.55}
-                  metalness={0.06}
-                />
-              </mesh>
-              {/* Umbral */}
-              <mesh position={[mid, 0.04, 0]}>
-                <boxGeometry
-                  args={[op.widthFt, 0.08, wall.thicknessFt * 1.2]}
-                />
-                <meshStandardMaterial
-                  color="#6a5a48"
-                  roughness={0.5}
-                  metalness={0.05}
-                />
-              </mesh>
-            </group>
-          );
-        })}
+    </group>
+  );
+}
+
+/** Puertas / ventanas como entidades explícitas (marco, hoja, vidrio). */
+function OpeningMesh({ entity }: { entity: OpeningEntity3D }) {
+  return (
+    <group
+      position={[entity.position.x, entity.position.y, entity.position.z]}
+      rotation={[0, entity.rotationY, 0]}
+    >
+      {entity.parts.map((p) => (
+        <mesh
+          key={`${entity.id}-${p.id}`}
+          position={[p.localPosition.x, p.localPosition.y, p.localPosition.z]}
+          castShadow={p.role !== "glass"}
+          receiveShadow={p.role !== "glass"}
+        >
+          <boxGeometry args={[p.size.x, p.size.y, p.size.z]} />
+          {p.role === "glass" ? (
+            <meshPhysicalMaterial
+              color={p.color}
+              transparent
+              opacity={p.opacity}
+              roughness={p.roughness}
+              metalness={p.metalness}
+              transmission={0.55}
+              thickness={0.12}
+            />
+          ) : (
+            <meshStandardMaterial
+              color={p.color}
+              transparent={p.opacity < 1}
+              opacity={p.opacity}
+              roughness={p.roughness}
+              metalness={p.metalness}
+            />
+          )}
+        </mesh>
+      ))}
     </group>
   );
 }
@@ -664,6 +599,9 @@ function SceneContent({
       ))}
       {scene.walls.map((w) => (
         <WallMesh key={w.id} wall={w} />
+      ))}
+      {scene.openings.map((op) => (
+        <OpeningMesh key={op.id} entity={op} />
       ))}
       {scene.furniture.map((item) => (
         <FurnitureMesh key={item.id} item={item} />
