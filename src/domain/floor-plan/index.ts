@@ -3,3 +3,7 @@ export * from "./floor-finish";
 export * from "./floor-texture";
 export * from "./style-presets";
 export * from "./wall-paint";
+export * from "./scene3d";
+export * from "./materials3d";
+export * from "./pbr-maps";
+export * from "./openings3d";

@@ -43,6 +43,18 @@ const FloorPlanCanvas = dynamic(
   },
 );
 
+const FloorPlan3DViewer = dynamic(
+  () => import("./FloorPlan3DViewer").then((m) => m.FloorPlan3DViewer),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex h-[560px] items-center justify-center rounded-lg border border-[var(--line)] bg-[#e8f0f1] text-sm text-[var(--ink-muted)]">
+        Cargando vista 3D…
+      </div>
+    ),
+  },
+);
+
 type Props = {
   initial: {
     project: Project;
@@ -82,6 +94,26 @@ export function FloorPlanEditor({ initial, catalog }: Props) {
   const [wallColorId, setWallColorId] = useState("");
   const [newRoomType, setNewRoomType] = useState<RoomType>("dormitorio");
   const [newRoomName, setNewRoomName] = useState("");
+  const [viewMode, setViewMode] = useState<"2d" | "3d">(() => {
+    if (typeof window === "undefined") return "2d";
+    return new URLSearchParams(window.location.search).get("vista") === "3d"
+      ? "3d"
+      : "2d";
+  });
+
+  function setView(next: "2d" | "3d") {
+    setViewMode(next);
+    if (typeof window === "undefined") return;
+    const url = new URL(window.location.href);
+    if (next === "3d") url.searchParams.set("vista", "3d");
+    else url.searchParams.delete("vista");
+    const q = url.searchParams.toString();
+    window.history.replaceState(
+      null,
+      "",
+      q ? `${url.pathname}?${q}` : url.pathname,
+    );
+  }
 
   const floorOptions = useMemo(
     () => filterFloorFinishCatalog(catalog),
@@ -339,21 +371,56 @@ export function FloorPlanEditor({ initial, catalog }: Props) {
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <p className="text-sm font-medium uppercase tracking-[0.14em] text-[var(--accent)]">
-            {t("plan.eyebrow")}
+            {viewMode === "3d" ? t("plan.eyebrow3d") : t("plan.eyebrow")}
           </p>
           <h1 className="brand-mark mt-1 text-3xl text-[var(--bg-deep)] sm:text-4xl">
             {project.name}
           </h1>
           <p className="mt-1 text-sm text-[var(--ink-muted)]">
-            {project.municipality} · {t("plan.subtitle")}
+            {project.municipality} ·{" "}
+            {viewMode === "3d" ? t("plan.subtitle3d") : t("plan.subtitle")}
           </p>
         </div>
-        <Link
-          href={`/proyectos/${project.id}`}
-          className="rounded-md border border-[var(--line)] bg-white px-4 py-2 text-sm font-medium hover:bg-[var(--surface)]"
-        >
-          {t("plan.backToBudget")}
-        </Link>
+        <div className="flex flex-wrap items-center gap-2">
+          <div
+            className="inline-flex rounded-md border border-[var(--line)] bg-white p-0.5 text-sm"
+            role="tablist"
+            aria-label="Vista planta"
+          >
+            <button
+              type="button"
+              role="tab"
+              aria-selected={viewMode === "2d"}
+              className={`rounded px-3 py-1.5 font-medium transition ${
+                viewMode === "2d"
+                  ? "bg-[var(--bg-deep)] text-white"
+                  : "text-[var(--ink-muted)] hover:bg-[var(--surface)]"
+              }`}
+              onClick={() => setView("2d")}
+            >
+              {t("plan.view2d")}
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={viewMode === "3d"}
+              className={`rounded px-3 py-1.5 font-medium transition ${
+                viewMode === "3d"
+                  ? "bg-[var(--bg-deep)] text-white"
+                  : "text-[var(--ink-muted)] hover:bg-[var(--surface)]"
+              }`}
+              onClick={() => setView("3d")}
+            >
+              {t("plan.view3d")}
+            </button>
+          </div>
+          <Link
+            href={`/proyectos/${project.id}`}
+            className="rounded-md border border-[var(--line)] bg-white px-4 py-2 text-sm font-medium hover:bg-[var(--surface)]"
+          >
+            {t("plan.backToBudget")}
+          </Link>
+        </div>
       </div>
 
       <div
@@ -373,21 +440,39 @@ export function FloorPlanEditor({ initial, catalog }: Props) {
 
       <div className="grid gap-5 lg:grid-cols-[1fr_320px]">
         <div className="space-y-3">
-          <FloorPlanCanvas
-            rooms={planRooms}
-            selectedId={selectedId}
-            onSelect={(id) => {
-              setSelectedId(id);
-              const room = rooms.find((r) => r.id === id);
-              setFloorSku(room?.floorCatalogItemId ?? "");
-              setPaintSku(room?.wallPaintCatalogItemId ?? "");
-              setWallColorId(room?.wallColorId ?? "");
-            }}
-            onGeometryChange={onGeometryChange}
-            catalogById={catalogById}
-          />
+          {viewMode === "2d" ? (
+            <FloorPlanCanvas
+              rooms={planRooms}
+              selectedId={selectedId}
+              onSelect={(id) => {
+                setSelectedId(id);
+                const room = rooms.find((r) => r.id === id);
+                setFloorSku(room?.floorCatalogItemId ?? "");
+                setPaintSku(room?.wallPaintCatalogItemId ?? "");
+                setWallColorId(room?.wallColorId ?? "");
+              }}
+              onGeometryChange={onGeometryChange}
+              catalogById={catalogById}
+            />
+          ) : (
+            <FloorPlan3DViewer
+              rooms={planRooms}
+              catalogById={catalogById}
+              selectedId={selectedId}
+              onSelect={(id) => {
+                if (id === selectedId) return;
+                setSelectedId(id);
+                const room = id ? rooms.find((r) => r.id === id) : null;
+                setFloorSku(room?.floorCatalogItemId ?? "");
+                setPaintSku(room?.wallPaintCatalogItemId ?? "");
+                setWallColorId(room?.wallColorId ?? "");
+              }}
+            />
+          )}
           <form
-            className="flex flex-wrap items-end gap-2 rounded-md border border-[var(--line)] bg-white p-3"
+            className={`flex flex-wrap items-end gap-2 rounded-md border border-[var(--line)] bg-white p-3 ${
+              viewMode === "3d" ? "opacity-70" : ""
+            }`}
             onSubmit={(e) => {
               e.preventDefault();
               void addRoomOnPlan();
