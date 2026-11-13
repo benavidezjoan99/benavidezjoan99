@@ -367,7 +367,7 @@ export function floorTextureForRoom(
 export function getFloorPbrMaps(kind: FloorTextureKind): PbrMapSet {
   let cached = floorPbrCache.get(kind);
   if (cached) return cached;
-  const size = 256;
+  const size = 128;
   const albedo = getFloorTexture3D(kind);
   const hf = heightFieldForFloor(kind, size);
   const normal = rgbaToTexture(
@@ -414,7 +414,7 @@ export function getWallPbrMaps(
   const key = `${fill}|${variation}|pbr`;
   let cached = wallPbrCache.get(key);
   if (cached) return cached;
-  const size = 256;
+  const size = 128;
   const albedo = getWallPaintTexture3D(fill, variation);
   const hf = heightFieldForWallPaint(variation, size);
   const normal = rgbaToTexture(

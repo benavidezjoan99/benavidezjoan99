@@ -189,25 +189,14 @@ function OpeningMesh({ entity }: { entity: OpeningEntity3D }) {
           receiveShadow={p.role !== "glass"}
         >
           <boxGeometry args={[p.size.x, p.size.y, p.size.z]} />
-          {p.role === "glass" ? (
-            <meshPhysicalMaterial
-              color={p.color}
-              transparent
-              opacity={p.opacity}
-              roughness={p.roughness}
-              metalness={p.metalness}
-              transmission={0.55}
-              thickness={0.12}
-            />
-          ) : (
-            <meshStandardMaterial
-              color={p.color}
-              transparent={p.opacity < 1}
-              opacity={p.opacity}
-              roughness={p.roughness}
-              metalness={p.metalness}
-            />
-          )}
+          <meshStandardMaterial
+            color={p.color}
+            transparent={p.role === "glass" || p.opacity < 1}
+            opacity={p.role === "glass" ? Math.min(0.45, p.opacity) : p.opacity}
+            roughness={p.roughness}
+            metalness={p.metalness}
+            depthWrite={p.role !== "glass"}
+          />
         </mesh>
       ))}
     </group>

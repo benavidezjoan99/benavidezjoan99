@@ -94,7 +94,26 @@ export function FloorPlanEditor({ initial, catalog }: Props) {
   const [wallColorId, setWallColorId] = useState("");
   const [newRoomType, setNewRoomType] = useState<RoomType>("dormitorio");
   const [newRoomName, setNewRoomName] = useState("");
-  const [viewMode, setViewMode] = useState<"2d" | "3d">("2d");
+  const [viewMode, setViewMode] = useState<"2d" | "3d">(() => {
+    if (typeof window === "undefined") return "2d";
+    return new URLSearchParams(window.location.search).get("vista") === "3d"
+      ? "3d"
+      : "2d";
+  });
+
+  function setView(next: "2d" | "3d") {
+    setViewMode(next);
+    if (typeof window === "undefined") return;
+    const url = new URL(window.location.href);
+    if (next === "3d") url.searchParams.set("vista", "3d");
+    else url.searchParams.delete("vista");
+    const q = url.searchParams.toString();
+    window.history.replaceState(
+      null,
+      "",
+      q ? `${url.pathname}?${q}` : url.pathname,
+    );
+  }
 
   const floorOptions = useMemo(
     () => filterFloorFinishCatalog(catalog),
@@ -377,7 +396,7 @@ export function FloorPlanEditor({ initial, catalog }: Props) {
                   ? "bg-[var(--bg-deep)] text-white"
                   : "text-[var(--ink-muted)] hover:bg-[var(--surface)]"
               }`}
-              onClick={() => setViewMode("2d")}
+              onClick={() => setView("2d")}
             >
               {t("plan.view2d")}
             </button>
@@ -390,7 +409,7 @@ export function FloorPlanEditor({ initial, catalog }: Props) {
                   ? "bg-[var(--bg-deep)] text-white"
                   : "text-[var(--ink-muted)] hover:bg-[var(--surface)]"
               }`}
-              onClick={() => setViewMode("3d")}
+              onClick={() => setView("3d")}
             >
               {t("plan.view3d")}
             </button>
